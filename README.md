@@ -5,16 +5,20 @@
 备份的存档将会存放至 qb_multi 文件夹中，文件目录格式如下：
 ```
 mcd_root/
-    setver.py
+    server.py
+    
     server/
         world/
+        
     qb_multi/
         slot1/
             info.json
             world/
+            
         slot2/
             ...
         ...
+        
         overwrite/
             info.txt
             world/
