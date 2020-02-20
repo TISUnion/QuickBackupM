@@ -35,12 +35,16 @@ restoring_backup = False
 mcd_root/
 	server/
 		world/
-	QuickM/
+	qb_multi/
 		slot1/
 			info.json
 			world/
 		slot2/
 			...
+		...
+		overwrite/
+			info.txt
+			world/
 '''
 
 
@@ -147,6 +151,7 @@ def create_backup(server, info, comment):
 			info_message(server, info, format_slot_info(info_dict=slot_info))
 	finally:
 		creating_backup = False
+
 
 def slot_number_formater(slot):
 	flag_fail = False
