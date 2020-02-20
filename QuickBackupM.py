@@ -214,7 +214,7 @@ def confirm_restore(server, info):
 				if abort_restore:
 					info_message(server, info, '§c回档§r被中断！')
 					return
-
+		kick_bots(server, info)
 		server.stop()
 		print('[QBM] Wait for up to 10s for server to stop')
 		time.sleep(10)
@@ -239,6 +239,16 @@ def confirm_restore(server, info):
 	finally:
 		restoring_backup = False
 
+
+def kick_bots(server, info):
+	try:
+		import mcdbot 
+		import copy
+		iinfo = copy.deepcopy(info)
+		iinfo.content = '!!bot kickall'
+		mcdbot.onServerInfo(server, iinfo)
+	except:
+		pass
 
 def list_backup(server, info):
 	for i in range(SlotCount):
