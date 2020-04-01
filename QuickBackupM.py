@@ -1,13 +1,16 @@
 # coding: utf8
+import copy
 import json
 import os
 import shutil
+import sys
 import time
 
 SlotCount = 5
 Prefix = '!!qb'
 BackupPath = './qb_multi'
 WorldName = 'world'
+SharePath = '/ssd/tribackup/shared'
 OverwriteBackupFolder = 'overwrite'
 ServerPath = './server'
 WorldPath = '{}/{}'.format(ServerPath, WorldName)
@@ -19,6 +22,7 @@ HelpMessage = '''------MCD Multi Quick Backup------
 §7''' + Prefix + ''' back §6[<slot>]§r §c回档§r为槽位§6<slot>§r的存档。当§6<slot>§r参数被指定时将会§c回档§r为槽位§6<slot>§r
 §7''' + Prefix + ''' confirm§r 在执行back后使用，再次确认是否进行§c回档§r
 §7''' + Prefix + ''' abort§r 在任何时候键入此指令可中断§c回档§r
+§7''' + Prefix + ''' share §6[<slot>]§r 将槽位§6<slot>§r的存档放至内服云盘
 §7''' + Prefix + ''' list§r 显示各槽位的存档信息
 当§6<slot>§r未被指定时默认选择槽位§61§r
 §a【例子】§r
@@ -31,6 +35,7 @@ slot_selected = None
 abort_restore = False
 creating_backup = False
 restoring_backup = False
+sharing_backup = False
 '''
 mcd_root/
 	server/
@@ -56,7 +61,7 @@ def print_message(server, info, msg, tell=True):
 			else:
 				server.say(line)
 		else:
-			print line
+			print(line)
 
 
 def info_message(server, info, msg, tell=False):
@@ -74,7 +79,7 @@ def get_slot_info(slot):
 			info = json.load(f, encoding='utf8')
 		for key in info.keys():
 			value = info[key]
-			if type(value) is unicode:
+			if sys.version_info.major == 2 and type(value) is unicode:
 				info[key] = value.encode('utf8')
 	except:
 		info = None
@@ -145,7 +150,10 @@ def create_backup(server, info, comment):
 			if comment is not None:
 				slot_info['comment'] = comment
 			with open('{}/info.json'.format(slot_path), 'w') as f:
-				json.dump(slot_info, f, indent=4, encoding='utf8')
+				if sys.version_info.major == 2:
+					json.dump(slot_info, f, indent=4, encoding='utf8')
+				else:
+					json.dump(slot_info, f, indent=4)
 			end_time = time.time()
 			info_message(server, info, '§a备份§r完成，耗时' + str(end_time - start_time)[:3] + '秒')
 			info_message(server, info, format_slot_info(info_dict=slot_info))
@@ -208,16 +216,24 @@ def confirm_restore(server, info):
 		info_message(server, info, '10秒后关闭服务器§c回档§r')
 		for countdown in range(1, 10):
 			info_message(server, info, '还有{}秒，将§c回档§r为槽位§6{}§r， {}'.format(10 - countdown, slot, format_slot_info(slot_number=slot)))
-			for i in range(100):
-				time.sleep(0.01)
+			for i in range(10):
+				time.sleep(0.1)
 				global abort_restore
 				if abort_restore:
 					info_message(server, info, '§c回档§r被中断！')
 					return
+
 		kick_bots(server, info)
 		server.stop()
-		print('[QBM] Wait for up to 10s for server to stop')
-		time.sleep(10)
+		# MCDaemon
+		if sys.version_info.major == 2:
+			print('[QBM] Wait for up to 10s for server to stop')
+			time.sleep(10)
+		# MCDReforged
+		else:
+			print('[QBM] Wait for server to stop')
+			while server.is_running():
+				time.sleep(0.1)
 
 		print('[QBM] Backup current world to avoid idiot')
 		overwrite_backup_path = BackupPath + '/' + OverwriteBackupFolder
@@ -242,13 +258,40 @@ def confirm_restore(server, info):
 
 def kick_bots(server, info):
 	try:
-		import mcdbot 
+		import mcdbot
 		import copy
 		iinfo = copy.deepcopy(info)
 		iinfo.content = '!!bot kickall'
 		mcdbot.onServerInfo(server, iinfo)
 	except:
 		pass
+
+
+def share_backup(server, info, slot):
+	global sharing_backup
+	if sharing_backup:
+		info_message(server, info, '正在分享存档至云盘中，请不要重复输入')
+		return
+	sharing_backup = True
+	try:
+		ret = slot_check(server, info, slot)
+		if ret is None:
+			return
+		else:
+			slot, slot_info = ret
+
+		dir_name = slot_info['time'].replace(' ', '_')
+		info_message(server, info, '传输中...请稍等')
+		if SharePath == '':  # wtf r u doing
+			info_message(server, info, '[ERROR] WRONG SHARE PATH WTF')
+			return
+		else:
+			os.system('ssh root@192.168.0.0 "rm -rf {}/*" > nul'.format(SharePath))
+		os.system('scp -r {}/{} root@192.168.0.0:{}/{} > nul'.format(get_slot_folder(slot), WorldName, SharePath, dir_name))
+		info_message(server, info, '已经成功分享到内服云盘')
+	finally:
+		sharing_backup = False
+
 
 def list_backup(server, info):
 	for i in range(SlotCount):
@@ -292,8 +335,17 @@ def onServerInfo(server, info):
 	# abort
 	elif cmdLen == 1 and command[0] == 'abort':
 		trigger_abort(server, info)
+	# share [<slot>]
+	elif cmdLen in [1, 2] and command[0] == 'share':
+		share_backup(server, info, command[1] if cmdLen == 2 else '1')
 	# list
 	elif cmdLen == 1 and command[0] == 'list':
 		list_backup(server, info)
 	else:
 		print_message(server, info, '参数错误！请输入§7' + Prefix + '§r以获取插件帮助')
+
+
+def on_info(server, info):
+	i = copy.deepcopy(info)
+	i.isPlayer = i.is_player
+	onServerInfo(server, i)
