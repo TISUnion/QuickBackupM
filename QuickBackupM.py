@@ -9,28 +9,29 @@ import time
 SlotCount = 5
 Prefix = '!!qb'
 BackupPath = './qb_multi'
-WorldName = 'world'
-SharePath = '/ssd/tribackup/shared'
+WorldNames = [
+	'world',
+]
+SharePath = '/home/shared'
 OverwriteBackupFolder = 'overwrite'
 ServerPath = './server'
-WorldPath = '{}/{}'.format(ServerPath, WorldName)
 HelpMessage = '''------MCD Multi Quick Backup------
 一个支持多槽位的快速§a备份§r&§c回档§r插件
 §a【格式说明】§r
-§7''' + Prefix + '''§r 显示帮助信息
-§7''' + Prefix + ''' make §e[<comment>]§r 创建一个储存至槽位1的§a备份§r，并将后移已有槽位。§e<comment>§r为可选存档注释
-§7''' + Prefix + ''' back §6[<slot>]§r §c回档§r为槽位§6<slot>§r的存档。当§6<slot>§r参数被指定时将会§c回档§r为槽位§6<slot>§r
-§7''' + Prefix + ''' confirm§r 在执行back后使用，再次确认是否进行§c回档§r
-§7''' + Prefix + ''' abort§r 在任何时候键入此指令可中断§c回档§r
-§7''' + Prefix + ''' share §6[<slot>]§r 将槽位§6<slot>§r的存档放至内服云盘
-§7''' + Prefix + ''' list§r 显示各槽位的存档信息
+§7{0}§r 显示帮助信息
+§7{0} make §e[<comment>]§r 创建一个储存至槽位1的§a备份§r，并将后移已有槽位。§e<comment>§r为可选存档注释
+§7{0} back §6[<slot>]§r §c回档§r为槽位§6<slot>§r的存档。当§6<slot>§r参数被指定时将会§c回档§r为槽位§6<slot>§r
+§7{0} confirm§r 在执行back后使用，再次确认是否进行§c回档§r
+§7{0} abort§r 在任何时候键入此指令可中断§c回档§r
+§7{0} share §6[<slot>]§r 将槽位§6<slot>§r的存档放至内服云盘
+§7{0} list§r 显示各槽位的存档信息
 当§6<slot>§r未被指定时默认选择槽位§61§r
 §a【例子】§r
-§7''' + Prefix + ''' make
-§7''' + Prefix + ''' make §e世吞完成§r
-§7''' + Prefix + ''' back
-§7''' + Prefix + ''' back §62§r
-'''
+§7{0} make
+§7{0} make §e世吞完成§r
+§7{0} back
+§7{0} back §62§r
+'''.format(Prefix)
 slot_selected = None
 abort_restore = False
 creating_backup = False
@@ -62,6 +63,16 @@ def print_message(server, info, msg, tell=True):
 				server.say(line)
 		else:
 			print(line)
+
+
+def copy_worlds(src, dst):
+	for world in WorldNames:
+		shutil.copytree('{}/{}'.format(src, world), '{}/{}'.format(dst, world))
+
+
+def remove_worlds(folder):
+	for world in WorldNames:
+		shutil.rmtree('{}/{}'.format(folder, world))
 
 
 def info_message(server, info, msg, tell=False):
@@ -142,7 +153,7 @@ def create_backup(server, info, comment):
 				break
 		slot_path = get_slot_folder(1)
 		try:
-			shutil.copytree(WorldPath, '{}/{}'.format(slot_path, WorldName))
+			copy_worlds(ServerPath, slot_path)
 		except Exception as e:
 			info_message(server, info, '§a备份§r失败，错误代码{}'.format(e))
 		else:
@@ -239,15 +250,15 @@ def confirm_restore(server, info):
 		overwrite_backup_path = BackupPath + '/' + OverwriteBackupFolder
 		if os.path.exists(overwrite_backup_path):
 			shutil.rmtree(overwrite_backup_path)
-		shutil.copytree(WorldPath, '{}/{}'.format(overwrite_backup_path, WorldName))
+		copy_worlds(ServerPath, overwrite_backup_path)
 		with open('{}/info.txt'.format(overwrite_backup_path), 'w') as f:
 			f.write('Overwrite time: {}\nConfirm by: {}'.format(format_time(), info.player if info.isPlayer else '$Console$'))
 
-		backup_dir = '{}/{}'.format(get_slot_folder(slot), WorldName)
-		print('[QBM] Restore backup ' + backup_dir)
-		shutil.rmtree(WorldPath)
+		slot_folder = get_slot_folder(slot)
+		print('[QBM] Restore backup ' + slot_folder)
+		remove_worlds(ServerPath)
 		time.sleep(1)
-		shutil.copytree(backup_dir, WorldPath)
+		copy_worlds(slot_folder, ServerPath)
 		print('[QBM] Wait for another 5s before server starts')
 		time.sleep(5)
 
@@ -287,7 +298,8 @@ def share_backup(server, info, slot):
 			return
 		else:
 			os.system('ssh root@192.168.0.0 "rm -rf {}/*" > nul'.format(SharePath))
-		os.system('scp -r {}/{} root@192.168.0.0:{}/{} > nul'.format(get_slot_folder(slot), WorldName, SharePath, dir_name))
+		for world in WorldNames:
+			os.system('scp -r {}/{} root@192.168.0.0:{}/{} > nul'.format(get_slot_folder(slot), world, SharePath, dir_name))
 		info_message(server, info, '已经成功分享到内服云盘')
 	finally:
 		sharing_backup = False
@@ -346,6 +358,11 @@ def onServerInfo(server, info):
 
 
 def on_info(server, info):
-	i = copy.deepcopy(info)
-	i.isPlayer = i.is_player
-	onServerInfo(server, i)
+	info2 = copy.deepcopy(info)
+	info2.isPlayer = info2.is_player
+	onServerInfo(server, info2)
+
+
+def on_unload(server):
+	global abort_restore
+	abort_restore = True

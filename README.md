@@ -26,7 +26,7 @@ mcd_root/
             world/
 ```
 
-## 格式说明
+## 命令格式说明
 
 `!!qb` 显示帮助信息
 
@@ -41,3 +41,43 @@ mcd_root/
 `!!qb list` 显示各槽位的存档信息
 
 当 `<slot>` 未被指定时默认选择槽位 `1`
+
+## 一些常量说明
+
+### SlotCount
+
+默认值: `SlotCount = 5`
+
+存档槽位的数量
+
+### Prefix
+
+默认值: `Prefix = '!!qb'`
+
+触发指令的前缀
+
+### BackupPath
+
+默认值: `BackupPath = './qb_multi'`
+
+备份储存的路径
+
+### WorldNames
+
+默认值:
+```
+WorldNames = [
+    'world',
+]
+```
+
+需要备份的世界文件夹列表，原版服务端只会有一个世界，在默认值基础上填上世界文件夹的名字即可
+
+对于非原版服务端如水桶、水龙头服务端，会有三个世界文件夹，此时可填写：
+```
+WorldNames = [
+    'world',
+    'world_nether',
+    'world_the_end',
+]
+```
