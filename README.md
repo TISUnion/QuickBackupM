@@ -38,11 +38,17 @@ mcd_root/
 
 `!!qb abort` 在任何时候键入此指令可中断回档
 
+`!!qb share` 分享存档至指定目录。在 TIS 服务器中使用，其他环境下忽略即可
+
 `!!qb list` 显示各槽位的存档信息
 
 当 `<slot>` 未被指定时默认选择槽位 `1`
 
+在 MCDR 环境下，默认配置下 `!!qb back` 以及 `!!qb share` 需要权限等级 `helper`
+
 ## 一些常量说明
+
+调整这些常量的数值也就是在配置 QuickBackupM 插件
 
 ### SlotCount
 
@@ -65,6 +71,7 @@ mcd_root/
 ### WorldNames
 
 默认值:
+
 ```
 WorldNames = [
     'world',
@@ -81,3 +88,9 @@ WorldNames = [
     'world_the_end',
 ]
 ```
+
+### MinimumPermissionLevel
+
+默认值: `MinimumPermissionLevel = 2`
+
+一个整数，代表使用 `!!qb back` 以及 `!!qb share` 需要权限等级。数值含义见[此处](https://github.com/Fallen-Breath/MCDReforged/blob/master/doc/readme_cn.md#权限)

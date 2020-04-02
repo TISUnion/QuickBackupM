@@ -12,6 +12,7 @@ BackupPath = './qb_multi'
 WorldNames = [
 	'world',
 ]
+MinimumPermissionLevel = 2  # helper
 SharePath = '/home/shared'
 OverwriteBackupFolder = 'overwrite'
 ServerPath = './server'
@@ -279,6 +280,8 @@ def kick_bots(server, info):
 
 
 def share_backup(server, info, slot):
+	info_message(server, info, '此指令已被禁用')
+	return
 	global sharing_backup
 	if sharing_backup:
 		info_message(server, info, '正在分享存档至云盘中，请不要重复输入')
@@ -335,6 +338,14 @@ def onServerInfo(server, info):
 		return
 
 	cmdLen = len(command)
+	# MCDR permission check
+	if hasattr(server, 'MCDR') and cmdLen >= 1 and command[0] in ['back', 'share']:
+		global MinimumPermissionLevel
+		if server.get_permission_level(info) >= MinimumPermissionLevel:
+			pass
+		else:
+			print_message(server, info, '§c权限不足！§r')
+			return
 	# make [<comment>]
 	if cmdLen in [1, 2] and command[0] == 'make':
 		create_backup(server, info, command[1] if cmdLen == 2 else None)
