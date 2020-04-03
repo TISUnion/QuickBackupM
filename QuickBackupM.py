@@ -12,7 +12,15 @@ BackupPath = './qb_multi'
 WorldNames = [
 	'world',
 ]
-MinimumPermissionLevel = 2  # helper
+# 0:guest 1:user 2:helper 3:admin
+MinimumPermissionLevel = {
+	'make': 1,
+	'back': 2,
+	'confirm': 1,
+	'abort': 1,
+	'share': 2,
+	'list': 0,
+}
 SharePath = '/home/shared'
 OverwriteBackupFolder = 'overwrite'
 ServerPath = './server'
@@ -339,11 +347,9 @@ def onServerInfo(server, info):
 
 	cmdLen = len(command)
 	# MCDR permission check
-	if hasattr(server, 'MCDR') and cmdLen >= 1 and command[0] in ['back', 'share']:
-		global MinimumPermissionLevel
-		if server.get_permission_level(info) >= MinimumPermissionLevel:
-			pass
-		else:
+	global MinimumPermissionLevel
+	if hasattr(server, 'MCDR') and cmdLen >= 1 and command[0] in MinimumPermissionLevel.keys():
+		if server.get_permission_level(info) < MinimumPermissionLevel[command[0]]:
 			print_message(server, info, '§c权限不足！§r')
 			return
 	# make [<comment>]

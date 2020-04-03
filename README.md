@@ -91,6 +91,19 @@ WorldNames = [
 
 ### MinimumPermissionLevel
 
-默认值: `MinimumPermissionLevel = 2`
+默认值:
 
-一个整数，代表使用 `!!qb back` 以及 `!!qb share` 需要权限等级。数值含义见[此处](https://github.com/Fallen-Breath/MCDReforged/blob/master/doc/readme_cn.md#权限)
+```
+MinimumPermissionLevel = {
+	'make': 1,
+	'back': 2,
+	'confirm': 1,
+	'abort': 1,
+	'share': 2,
+	'list': 0,
+}
+```
+
+一个字典，代表使用不同类型指令需要权限等级。数值含义见[此处](https://github.com/Fallen-Breath/MCDReforged/blob/master/doc/readme_cn.md#权限)
+
+把所有数值设置成 `0` 以让所有人均可操作
