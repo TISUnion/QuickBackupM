@@ -21,7 +21,6 @@ MinimumPermissionLevel = {
 	'share': 2,
 	'list': 0,
 }
-SharePath = '/home/shared'
 OverwriteBackupFolder = 'overwrite'
 ServerPath = './server'
 HelpMessage = '''------MCD Multi Quick Backup------
@@ -32,7 +31,6 @@ HelpMessage = '''------MCD Multi Quick Backup------
 §7{0} back §6[<slot>]§r §c回档§r为槽位§6<slot>§r的存档。当§6<slot>§r参数被指定时将会§c回档§r为槽位§6<slot>§r
 §7{0} confirm§r 在执行back后使用，再次确认是否进行§c回档§r
 §7{0} abort§r 在任何时候键入此指令可中断§c回档§r
-§7{0} share §6[<slot>]§r 将槽位§6<slot>§r的存档放至内服云盘
 §7{0} list§r 显示各槽位的存档信息
 当§6<slot>§r未被指定时默认选择槽位§61§r
 §a【例子】§r
@@ -45,7 +43,6 @@ slot_selected = None
 abort_restore = False
 creating_backup = False
 restoring_backup = False
-sharing_backup = False
 '''
 mcd_root/
 	server/
@@ -287,35 +284,6 @@ def kick_bots(server, info):
 		pass
 
 
-def share_backup(server, info, slot):
-	info_message(server, info, '此指令已被禁用')
-	return
-	global sharing_backup
-	if sharing_backup:
-		info_message(server, info, '正在分享存档至云盘中，请不要重复输入')
-		return
-	sharing_backup = True
-	try:
-		ret = slot_check(server, info, slot)
-		if ret is None:
-			return
-		else:
-			slot, slot_info = ret
-
-		dir_name = slot_info['time'].replace(' ', '_')
-		info_message(server, info, '传输中...请稍等')
-		if SharePath == '':  # wtf r u doing
-			info_message(server, info, '[ERROR] WRONG SHARE PATH WTF')
-			return
-		else:
-			os.system('ssh root@192.168.0.0 "rm -rf {}/*" > nul'.format(SharePath))
-		for world in WorldNames:
-			os.system('scp -r {}/{} root@192.168.0.0:{}/{} > nul'.format(get_slot_folder(slot), world, SharePath, dir_name))
-		info_message(server, info, '已经成功分享到内服云盘')
-	finally:
-		sharing_backup = False
-
-
 def list_backup(server, info):
 	for i in range(SlotCount):
 		info_message(server, info, '[槽位§6{}§r] {}'.format(i + 1, format_slot_info(slot_number=i + 1)))
@@ -364,9 +332,6 @@ def onServerInfo(server, info):
 	# abort
 	elif cmdLen == 1 and command[0] == 'abort':
 		trigger_abort(server, info)
-	# share [<slot>]
-	elif cmdLen in [1, 2] and command[0] == 'share':
-		share_backup(server, info, command[1] if cmdLen == 2 else '1')
 	# list
 	elif cmdLen == 1 and command[0] == 'list':
 		list_backup(server, info)
