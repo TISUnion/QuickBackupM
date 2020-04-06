@@ -249,7 +249,7 @@ def confirm_restore(server, info):
 		# MCDReforged
 		else:
 			print('[QBM] Wait for server to stop')
-			while server.is_running():
+			while server.is_server_running():
 				time.sleep(0.1)
 
 		print('[QBM] Backup current world to avoid idiot')
