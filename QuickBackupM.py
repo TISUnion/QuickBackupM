@@ -345,6 +345,10 @@ def on_info(server, info):
 	onServerInfo(server, info2)
 
 
+def on_load(server, old):
+	server.add_help_message(Prefix, '备份/回档，{}槽位'.format(SlotCount))
+
+
 def on_unload(server):
 	global abort_restore
 	abort_restore = True
