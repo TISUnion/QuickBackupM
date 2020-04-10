@@ -346,7 +346,7 @@ def onServerInfo(server, info):
 	# list
 	elif cmdLen == 1 and command[0] == 'list':
 		list_backup(server, info)
-        
+        # delete
 	elif cmdLen in [1, 2] and command[0] == 'del':
 		delete_backup(server, info, command[1] if cmdLen == 2 else '1')
         
