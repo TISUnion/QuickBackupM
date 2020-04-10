@@ -132,15 +132,16 @@ def touch_backup_folder():
 	for i in range(SlotCount):
 		mkdir(get_slot_folder(i + 1))
 
-        
+
 def delete_backup(server, info, slot):
-    if creating_backup == False and restoring_backup == False:
-        try:
-            shutil.rmtree(get_slot_folder(slot))
-        except BaseException:
-            server.say("§4删除失败，详情请参考见控制台错误输出")
-        else:
-            server.say("§a删除完成")
+	if creating_backup == False and restoring_backup == False:
+		try:
+			shutil.rmtree(get_slot_folder(slot))
+		except:
+			info_message(server, info, "§4删除失败，详情请参考见控制台错误输出")
+		else:
+			info_message(server, info, "§a删除完成")
+
 
 def create_backup(server, info, comment):
 	global creating_backup
@@ -243,7 +244,8 @@ def confirm_restore(server, info):
 
 		info_message(server, info, '10秒后关闭服务器§c回档§r')
 		for countdown in range(1, 10):
-			info_message(server, info, '还有{}秒，将§c回档§r为槽位§6{}§r， {}'.format(10 - countdown, slot, format_slot_info(slot_number=slot)))
+			info_message(server, info,
+						 '还有{}秒，将§c回档§r为槽位§6{}§r， {}'.format(10 - countdown, slot, format_slot_info(slot_number=slot)))
 			for i in range(10):
 				time.sleep(0.1)
 				global abort_restore
@@ -269,7 +271,8 @@ def confirm_restore(server, info):
 			shutil.rmtree(overwrite_backup_path)
 		copy_worlds(ServerPath, overwrite_backup_path)
 		with open('{}/info.txt'.format(overwrite_backup_path), 'w') as f:
-			f.write('Overwrite time: {}\nConfirm by: {}'.format(format_time(), info.player if info.isPlayer else '$Console$'))
+			f.write('Overwrite time: {}\nConfirm by: {}'.format(format_time(),
+																info.player if info.isPlayer else '$Console$'))
 
 		slot_folder = get_slot_folder(slot)
 		print('[QBM] Restore backup ' + slot_folder)
@@ -346,10 +349,10 @@ def onServerInfo(server, info):
 	# list
 	elif cmdLen == 1 and command[0] == 'list':
 		list_backup(server, info)
-        # delete
+	# delete
 	elif cmdLen in [1, 2] and command[0] == 'del':
 		delete_backup(server, info, command[1] if cmdLen == 2 else '1')
-        
+
 	else:
 		print_message(server, info, '参数错误！请输入§7' + Prefix + '§r以获取插件帮助')
 
