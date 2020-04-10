@@ -33,7 +33,9 @@ mcd_root/
 
 `!!qb make [<comment>]` 创建一个储存至槽位 `1` 的备份，并将后移已有槽位。`<comment>` 为可选存档注释
 
-`!!qb back [<slot>]` 回档为槽位 `<slot>` 的存档。当 `<slot>` 参数被指定时将会回档为槽位 `<slot>`
+`!!qb back [<slot>]` 回档为槽位 `<slot>` 的存档。
+
+`!!qb del [<slot>]` 删除槽位 `<slot>` 的存档。
 
 `!!qb confirm` 在执行 `back` 后使用，再次确认是否进行回档
 
