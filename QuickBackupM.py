@@ -136,7 +136,7 @@ def touch_backup_folder():
 def delete_backup(server, info, slot):
     if creating_backup == False and restoring_backup == False:
         try:
-            shutil.rmtree(BackupPath + '/slot' + slot)
+            shutil.rmtree(get_slot_folder(slot))
         except BaseException:
             server.say("§4删除失败，详情请参考见控制台错误输出")
         else:
