@@ -20,6 +20,7 @@ MinimumPermissionLevel = {
 	'abort': 1,
 	'share': 2,
 	'list': 0,
+	'del': 2,
 }
 OverwriteBackupFolder = 'overwrite'
 ServerPath = './server'
@@ -29,6 +30,7 @@ HelpMessage = '''------MCD Multi Quick Backup------
 §7{0}§r 显示帮助信息
 §7{0} make §e[<comment>]§r 创建一个储存至槽位1的§a备份§r，并将后移已有槽位。§e<comment>§r为可选存档注释
 §7{0} back §6[<slot>]§r §c回档§r为槽位§6<slot>§r的存档。当§6<slot>§r参数被指定时将会§c回档§r为槽位§6<slot>§r
+§7{0} del §6[<slot>]§r §c删除§r槽位§6<slot>§r的存档。§r
 §7{0} confirm§r 在执行back后使用，再次确认是否进行§c回档§r
 §7{0} abort§r 在任何时候键入此指令可中断§c回档§r
 §7{0} list§r 显示各槽位的存档信息
@@ -130,6 +132,15 @@ def touch_backup_folder():
 	for i in range(SlotCount):
 		mkdir(get_slot_folder(i + 1))
 
+        
+def delete_backup(server, info, slot):
+    if creating_backup == False and restoring_backup == False:
+        try:
+            shutil.rmtree(BackupPath + '/slot' + slot)
+        except BaseException:
+            server.say("§4删除失败，详情请参考见控制台错误输出")
+        else:
+            server.say("§a删除完成")
 
 def create_backup(server, info, comment):
 	global creating_backup
@@ -335,6 +346,10 @@ def onServerInfo(server, info):
 	# list
 	elif cmdLen == 1 and command[0] == 'list':
 		list_backup(server, info)
+        
+	elif cmdLen in [1, 2] and command[0] == 'del':
+		delete_backup(server, info, command[1] if cmdLen == 2 else '1')
+        
 	else:
 		print_message(server, info, '参数错误！请输入§7' + Prefix + '§r以获取插件帮助')
 
