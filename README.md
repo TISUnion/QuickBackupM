@@ -69,6 +69,12 @@ mcd_root/
 
 备份储存的路径
 
+### TurnOffAutoSave
+
+默认值: `TurnOffAutoSave = True`
+
+是否在备份时临时关闭自动保存
+
 ### WorldNames
 
 默认值:
