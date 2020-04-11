@@ -9,6 +9,7 @@ import time
 SlotCount = 5
 Prefix = '!!qb'
 BackupPath = './qb_multi'
+TurnOffAutoSave = True
 WorldNames = [
 	'world',
 ]
@@ -164,6 +165,8 @@ def create_backup(server, info, comment):
 		# start backup
 		global game_saved
 		game_saved = False
+		if TurnOffAutoSave:
+			server.execute('save-off')
 		server.execute('save-all')
 		for i in range(1000):
 			time.sleep(0.01)
@@ -188,6 +191,8 @@ def create_backup(server, info, comment):
 			info_message(server, info, format_slot_info(info_dict=slot_info))
 	finally:
 		creating_backup = False
+		if TurnOffAutoSave:
+			server.execute('save-on')
 
 
 def slot_number_formater(slot):
