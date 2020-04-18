@@ -5,6 +5,7 @@ import os
 import shutil
 import sys
 import time
+from threading import Lock
 
 SlotCount = 5
 Prefix = '!!qb'
@@ -25,29 +26,30 @@ MinimumPermissionLevel = {
 }
 OverwriteBackupFolder = 'overwrite'
 ServerPath = './server'
-HelpMessage = '''------MCD Multi Quick Backup------
-一个支持多槽位的快速§a备份§r&§c回档§r插件
-§a【格式说明】§r
-§7{0}§r 显示帮助信息
-§7{0} make §e[<comment>]§r 创建一个储存至槽位1的§a备份§r，并将后移已有槽位。§e<comment>§r为可选存档注释
-§7{0} back §6[<slot>]§r §c回档§r为槽位§6<slot>§r的存档。当§6<slot>§r参数被指定时将会§c回档§r为槽位§6<slot>§r
-§7{0} del §6[<slot>]§r §c删除§r槽位§6<slot>§r的存档。§r
-§7{0} confirm§r 在执行back后使用，再次确认是否进行§c回档§r
-§7{0} abort§r 在任何时候键入此指令可中断§c回档§r
-§7{0} list§r 显示各槽位的存档信息
-当§6<slot>§r未被指定时默认选择槽位§61§r
-§a【例子】§r
+HelpMessage = '''------MCDR Multi Quick Backup------
+A plugin that supports multi slots world §abackup§r and backup §crestore§r
+§a[Format]§r
+§7{0}§r Display help message
+§7{0} make §e[<comment>]§r Make a §abackup§r to slot §61§r, and shift the slots behind。§e<comment>§r is an optional comment message
+§7{0} back §6[<slot>]§r §cRestore§r the world to slot §61§r. When §6<slot>§r parameter is set it will §crestore§r to slot §6<slot>§r
+§7{0} del §6[<slot>]§r §cDelete§r the world in slot §6<slot>§r
+§7{0} confirm§r Use after execute back to confirm §crestore§r execution
+§7{0} abort§r Abort backup §crestoring§r
+§7{0} list§r Display slot information
+When §6<slot>§r is not set the default value is §61§r
+§a[Example]§r
 §7{0} make
-§7{0} make §e世吞完成§r
+§7{0} make §eworld eater done§r
 §7{0} back
 §7{0} back §62§r
 '''.format(Prefix)
 slot_selected = None
 abort_restore = False
-creating_backup = False
-restoring_backup = False
+game_saved = False
+creating_backup = Lock()
+restoring_backup = Lock()
 '''
-mcd_root/
+MCDR_root/
 	server/
 		world/
 	qb_multi/
@@ -120,7 +122,7 @@ def format_slot_info(info_dict=None, slot_number=None):
 
 	if info is None:
 		return None
-	msg = '日期: {}; 注释: {}'.format(info['time'], info.get('comment', '§7空§r'))
+	msg = 'Date: {}; Comment: {}'.format(info['time'], info.get('comment', '§7Empty§r'))
 	return msg
 
 
@@ -135,23 +137,25 @@ def touch_backup_folder():
 
 
 def delete_backup(server, info, slot):
-	if creating_backup == False and restoring_backup == False:
-		try:
-			shutil.rmtree(get_slot_folder(slot))
-		except:
-			info_message(server, info, "§4删除失败，详情请参考见控制台错误输出")
-		else:
-			info_message(server, info, "§a删除完成")
+	global creating_backup, restoring_backup
+	if creating_backup.locked() or restoring_backup.locked():
+		return
+	try:
+		shutil.rmtree(get_slot_folder(slot))
+	except:
+		info_message(server, info, "§4Delete fail, check console for more detail")
+	else:
+		info_message(server, info, "§aDelete success")
 
 
 def create_backup(server, info, comment):
 	global creating_backup
-	if creating_backup:
-		info_message(server, info, '正在§a备份§r中，请不要重复输入')
+	acquired = creating_backup.acquire(blocking=False)
+	if not acquired:
+		info_message(server, info, '§aBacking up§r, dont spam')
 		return
-	creating_backup = True
 	try:
-		info_message(server, info, '§a备份§r中...请稍等')
+		info_message(server, info, '§aBacking up§r, please wait')
 		start_time = time.time()
 		touch_backup_folder()
 
@@ -176,7 +180,7 @@ def create_backup(server, info, comment):
 		try:
 			copy_worlds(ServerPath, slot_path)
 		except Exception as e:
-			info_message(server, info, '§a备份§r失败，错误代码{}'.format(e))
+			info_message(server, info, '§aBack up§r unsuccessfully, error code {}'.format(e))
 		else:
 			slot_info = {'time': format_time()}
 			if comment is not None:
@@ -187,10 +191,10 @@ def create_backup(server, info, comment):
 				else:
 					json.dump(slot_info, f, indent=4)
 			end_time = time.time()
-			info_message(server, info, '§a备份§r完成，耗时' + str(end_time - start_time)[:3] + '秒')
+			info_message(server, info, '§aBack up§r successfully, time cost ' + str(end_time - start_time)[:3] + 's')
 			info_message(server, info, format_slot_info(info_dict=slot_info))
 	finally:
-		creating_backup = False
+		creating_backup.release()
 		if TurnOffAutoSave:
 			server.execute('save-on')
 
@@ -210,12 +214,12 @@ def slot_number_formater(slot):
 def slot_check(server, info, slot):
 	slot = slot_number_formater(slot)
 	if slot is None:
-		info_message(server, info, '槽位输入错误，应输入一个位于[{}, {}]的数字'.format(1, SlotCount))
+		info_message(server, info, 'Slot format wrong, it should be a number between [{}, {}]'.format(1, SlotCount))
 		return None
 
 	slot_info = get_slot_info(slot)
 	if slot_info is None:
-		info_message(server, info, '槽位输入错误，此槽位为空')
+		info_message(server, info, 'Slot is empty')
 		return None
 	return slot, slot_info
 
@@ -229,33 +233,32 @@ def restore_backup(server, info, slot):
 	global slot_selected, abort_restore
 	slot_selected = slot
 	abort_restore = False
-	info_message(server, info, '准备将存档恢复至槽位§6{}§r， {}'.format(slot, format_slot_info(info_dict=slot_info)))
-	info_message(server, info, '使用§7{0} confirm§r 确认§c回档§r，§7{0} abort§r 取消'.format(Prefix))
+	info_message(server, info, 'Gonna restore the world to slot §6{}§r, {}'.format(slot, format_slot_info(info_dict=slot_info)))
+	info_message(server, info, 'Use §7{0} confirm§r to confirm §crestore§r, §7{0} abort§r to abort'.format(Prefix))
 
 
 def confirm_restore(server, info):
 	global restoring_backup
-	if restoring_backup:
-		info_message(server, info, '正在准备§c回档§r中，请不要重复输入')
+	acquired = restoring_backup.acquire(blocking=False)
+	if not acquired:
+		info_message(server, info, '§cRestoring§r, dont spam')
 		return
-	restoring_backup = True
 	try:
 		global slot_selected
 		if slot_selected is None:
-			info_message(server, info, '没有什么需要确认的')
+			info_message(server, info, 'Nothing to confirm')
 			return
 		slot = slot_selected
 		slot_selected = None
 
-		info_message(server, info, '10秒后关闭服务器§c回档§r')
+		info_message(server, info, '§cRestore§r after 10 second')
 		for countdown in range(1, 10):
-			info_message(server, info,
-						 '还有{}秒，将§c回档§r为槽位§6{}§r， {}'.format(10 - countdown, slot, format_slot_info(slot_number=slot)))
+			info_message(server, info, '{} second later the world will be §crestored§r to slot §6{}§r, {}'.format(10 - countdown, slot, format_slot_info(slot_number=slot)))
 			for i in range(10):
 				time.sleep(0.1)
 				global abort_restore
 				if abort_restore:
-					info_message(server, info, '§c回档§r被中断！')
+					info_message(server, info, '§cRestore§r aborted!')
 					return
 
 		kick_bots(server, info)
@@ -280,16 +283,16 @@ def confirm_restore(server, info):
 																info.player if info.isPlayer else '$Console$'))
 
 		slot_folder = get_slot_folder(slot)
-		print('[QBM] Restore backup ' + slot_folder)
+		print('[QBM] Restoring backup ' + slot_folder)
 		remove_worlds(ServerPath)
-		time.sleep(1)
+		time.sleep(0.5)
 		copy_worlds(slot_folder, ServerPath)
-		print('[QBM] Wait for another 5s before server starts')
-		time.sleep(5)
+		print('[QBM] Wait for another 1s before server starts')
+		time.sleep(1)
 
 		server.start()
 	finally:
-		restoring_backup = False
+		restoring_backup.release()
 
 
 def kick_bots(server, info):
@@ -305,14 +308,14 @@ def kick_bots(server, info):
 
 def list_backup(server, info):
 	for i in range(SlotCount):
-		info_message(server, info, '[槽位§6{}§r] {}'.format(i + 1, format_slot_info(slot_number=i + 1)))
+		info_message(server, info, '[Slot §6{}§r] {}'.format(i + 1, format_slot_info(slot_number=i + 1)))
 
 
 def trigger_abort(server, info):
 	global abort_restore, slot_selected
 	abort_restore = True
 	slot_selected = None
-	info_message(server, info, '终止操作！')
+	info_message(server, info, 'Operation terminated!')
 
 
 def onServerInfo(server, info):
@@ -337,11 +340,12 @@ def onServerInfo(server, info):
 	global MinimumPermissionLevel
 	if hasattr(server, 'MCDR') and cmdLen >= 1 and command[0] in MinimumPermissionLevel.keys():
 		if server.get_permission_level(info) < MinimumPermissionLevel[command[0]]:
-			print_message(server, info, '§c权限不足！§r')
+			print_message(server, info, '§cPermission denied§r')
 			return
 	# make [<comment>]
-	if cmdLen in [1, 2] and command[0] == 'make':
-		create_backup(server, info, command[1] if cmdLen == 2 else None)
+	if cmdLen >= 1 and command[0] == 'make':
+		comment = content.replace('{} make'.format(Prefix), '', 1).lstrip(' ') if cmdLen >= 1 else None
+		create_backup(server, info, comment)
 	# back [<slot>]
 	elif cmdLen in [1, 2] and command[0] == 'back':
 		restore_backup(server, info, command[1] if cmdLen == 2 else '1')
@@ -359,7 +363,7 @@ def onServerInfo(server, info):
 		delete_backup(server, info, command[1] if cmdLen == 2 else '1')
 
 	else:
-		print_message(server, info, '参数错误！请输入§7' + Prefix + '§r以获取插件帮助')
+		print_message(server, info, 'Unknown command, input §7' + Prefix + '§r for help')
 
 
 def on_info(server, info):
@@ -369,7 +373,7 @@ def on_info(server, info):
 
 
 def on_load(server, old):
-	server.add_help_message(Prefix, '备份/回档，{}槽位'.format(SlotCount))
+	server.add_help_message(Prefix, 'back up / restore with {} slots'.format(SlotCount))
 
 
 def on_unload(server):
