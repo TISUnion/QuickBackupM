@@ -30,8 +30,8 @@ HelpMessage = '''------MCDR Multi Quick Backup------
 一个支持多槽位的快速§a备份§r&§c回档§r插件
 §a【格式说明】§r
 §7{0}§r 显示帮助信息
-§7{0} make §e[<comment>]§r 创建一个储存至槽位1的§a备份§r，并将后移已有槽位。§e<comment>§r为可选存档注释
-§7{0} back §6[<slot>]§r §c回档§r为槽位§6<slot>§r的存档。当§6<slot>§r参数被指定时将会§c回档§r为槽位§6<slot>§r
+§7{0} make §e[<comment>]§r 创建一个储存至槽位§61§r的§a备份§r，并将后移已有槽位。§e<comment>§r为可选存档注释
+§7{0} back §6[<slot>]§r §c回档§r为槽位§61§r的存档。当§6<slot>§r参数被指定时将会§c回档§r为槽位§6<slot>§r
 §7{0} del §6[<slot>]§r §c删除§r槽位§6<slot>§r的存档。§r
 §7{0} confirm§r 在执行back后使用，再次确认是否进行§c回档§r
 §7{0} abort§r 在任何时候键入此指令可中断§c回档§r

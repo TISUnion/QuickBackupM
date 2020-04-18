@@ -1,6 +1,8 @@
 # QuickBackupM
 ---------
 
+[English](https://github.com/TISUnion/QuickBackupM/blob/master/README_en.md)
+
 一个支持多槽位的快速备份＆回档插件
 
 兼容 [MCDaemon](https://github.com/kafuuchino-desu/MCDaemon) 以及 [MCDReforged](https://github.com/Fallen-Breath/MCDReforged)

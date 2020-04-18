@@ -1,6 +1,8 @@
 # QuickBackupM
 ---------
 
+[中文](https://github.com/TISUnion/QuickBackupM/blob/master/README.md)
+
 A plugin for multi slot back up / restore your world
 
 Compatible with [MCDaemon](https://github.com/kafuuchino-desu/MCDaemon) and [MCDReforged](https://github.com/Fallen-Breath/MCDReforged)
