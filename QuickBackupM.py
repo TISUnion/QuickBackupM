@@ -26,7 +26,8 @@ MinimumPermissionLevel = {
 }
 OverwriteBackupFolder = 'overwrite'
 ServerPath = './server'
-HelpMessage = '''------MCDR Multi Quick Backup------
+HelpMessage = '''
+------MCDR Multi Quick Backup------
 一个支持多槽位的快速§a备份§r&§c回档§r插件
 §a【格式说明】§r
 §7{0}§r 显示帮助信息
@@ -42,7 +43,7 @@ HelpMessage = '''------MCDR Multi Quick Backup------
 §7{0} make §e世吞完成§r
 §7{0} back
 §7{0} back §62§r
-'''.format(Prefix)
+'''.strip().format(Prefix)
 slot_selected = None
 abort_restore = False
 game_saved = False
@@ -178,7 +179,7 @@ def create_backup(server, info, comment):
 			if game_saved:
 				break
 			if plugin_unloaded:
-				server.reply(info, '插件卸载，§a备份§r中断！')
+				server.reply(info, '插件重载，§a备份§r中断！')
 				return
 		slot_path = get_slot_folder(1)
 		try:

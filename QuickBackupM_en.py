@@ -26,7 +26,8 @@ MinimumPermissionLevel = {
 }
 OverwriteBackupFolder = 'overwrite'
 ServerPath = './server'
-HelpMessage = '''------MCDR Multi Quick Backup------
+HelpMessage = '''
+------MCDR Multi Quick Backup------
 A plugin that supports multi slots world §abackup§r and backup §crestore§r
 §a[Format]§r
 §7{0}§r Display help message
@@ -42,7 +43,7 @@ When §6<slot>§r is not set the default value is §61§r
 §7{0} make §eworld eater done§r
 §7{0} back
 §7{0} back §62§r
-'''.format(Prefix)
+'''.strip().format(Prefix)
 slot_selected = None
 abort_restore = False
 game_saved = False
