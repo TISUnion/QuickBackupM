@@ -46,6 +46,7 @@ HelpMessage = '''------MCDR Multi Quick Backup------
 slot_selected = None
 abort_restore = False
 game_saved = False
+plugin_unloaded = False
 creating_backup = Lock()
 restoring_backup = Lock()
 '''
@@ -167,15 +168,18 @@ def create_backup(server, info, comment):
 			os.rename(get_slot_folder(i - 1), get_slot_folder(i))
 
 		# start backup
-		global game_saved
+		global game_saved, plugin_unloaded
 		game_saved = False
 		if TurnOffAutoSave:
 			server.execute('save-off')
 		server.execute('save-all')
-		for i in range(1000):
+		while True:
 			time.sleep(0.01)
 			if game_saved:
 				break
+			if plugin_unloaded:
+				server.reply(info, '插件卸载，§a备份§r中断！')
+				return
 		slot_path = get_slot_folder(1)
 		try:
 			copy_worlds(ServerPath, slot_path)
@@ -378,5 +382,6 @@ def on_load(server, old):
 
 
 def on_unload(server):
-	global abort_restore
+	global abort_restore, plugin_unloaded
 	abort_restore = True
+	plugin_unloaded = True
