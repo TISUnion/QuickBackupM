@@ -26,6 +26,7 @@ MinimumPermissionLevel = {
 }
 OverwriteBackupFolder = 'overwrite'
 ServerPath = './server'
+SharePath = '/home/shared'
 HelpMessage = '''
 ------MCDR Multi Quick Backup------
 一个支持多槽位的快速§a备份§r&§c回档§r插件
@@ -37,6 +38,7 @@ HelpMessage = '''
 §7{0} confirm§r 在执行back后使用，再次确认是否进行§c回档§r
 §7{0} abort§r 在任何时候键入此指令可中断§c回档§r
 §7{0} list§r 显示各槽位的存档信息
+§7{0} share §6[<slot>]§r 分享存档至云盘
 当§6<slot>§r未被指定时默认选择槽位§61§r
 §a【例子】§r
 §7{0} make
@@ -50,6 +52,7 @@ game_saved = False
 plugin_unloaded = False
 creating_backup = Lock()
 restoring_backup = Lock()
+sharing_backup = Lock()
 '''
 mcdr_root/
 	server/
@@ -312,6 +315,34 @@ def kick_bots(server, info):
 		pass
 
 
+def share_backup(server, info, slot):
+	global sharing_backup
+	if sharing_backup:
+		info_message(server, info, '正在分享存档至云盘中，请不要重复输入')
+		return
+	sharing_backup = True
+	try:
+		ret = slot_check(server, info, slot)
+		if ret is None:
+			return
+		else:
+			slot, slot_info = ret
+
+		dir_name = slot_info['time'].replace(' ', '_')
+		info_message(server, info, '传输中...请稍等')
+		if SharePath == '':  # wtf r u doing
+			info_message(server, info, '[ERROR] WRONG SHARE PATH WTF')
+			return
+		else:
+			os.system('ssh root@192.168.0.0 "rm -rf {}/*" > nul'.format(SharePath))
+		for world in WorldNames:
+			os.system('scp -r {}/{} root@192.168.0.0:{}/{} > nul'.format(get_slot_folder(slot), world, SharePath, dir_name))
+		info_message(server, info, '已经成功分享到内服云盘')
+	finally:
+		sharing_backup = False
+
+
+
 def list_backup(server, info):
 	for i in range(SlotCount):
 		info_message(server, info, '[槽位§6{}§r] {}'.format(i + 1, format_slot_info(slot_number=i + 1)))
@@ -355,6 +386,9 @@ def onServerInfo(server, info):
 	# back [<slot>]
 	elif cmdLen in [1, 2] and command[0] == 'back':
 		restore_backup(server, info, command[1] if cmdLen == 2 else '1')
+	# del
+	elif cmdLen in [1, 2] and command[0] == 'del':
+		delete_backup(server, info, command[1] if cmdLen == 2 else '1')
 	# confirm
 	elif cmdLen == 1 and command[0] == 'confirm':
 		confirm_restore(server, info)
@@ -364,10 +398,9 @@ def onServerInfo(server, info):
 	# list
 	elif cmdLen == 1 and command[0] == 'list':
 		list_backup(server, info)
-	# delete
-	elif cmdLen in [1, 2] and command[0] == 'del':
-		delete_backup(server, info, command[1] if cmdLen == 2 else '1')
-
+	# share [<slot>]
+	elif cmdLen in [1, 2] and command[0] == 'share':
+		share_backup(server, info, command[1] if cmdLen == 2 else '1')
 	else:
 		print_message(server, info, '参数错误！请输入§7' + Prefix + '§r以获取插件帮助')
 
@@ -380,6 +413,13 @@ def on_info(server, info):
 
 def on_load(server, old):
 	server.add_help_message(Prefix, '备份/回档，{}槽位'.format(SlotCount))
+	global creating_backup, restoring_backup, sharing_backup
+	if hasattr(old, 'creating_backup') and type(old.creating_backup) == type(creating_backup):
+		creating_backup = old.creating_backup
+	if hasattr(old, 'restoring_backup') and type(old.restoring_backup) == type(restoring_backup):
+		restoring_backup = old.restoring_backup
+	if hasattr(old, 'sharing_backup') and type(old.sharing_backup) == type(sharing_backup):
+		sharing_backup = old.sharing_backup
 
 
 def on_unload(server):
