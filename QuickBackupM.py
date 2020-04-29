@@ -27,6 +27,7 @@ MinimumPermissionLevel = {
 OverwriteBackupFolder = 'overwrite'
 ServerPath = './server'
 SharePath = '/home/shared'
+ShareAddress = '192.168.0.0'
 HelpMessage = '''
 ------MCDR Multi Quick Backup------
 一个支持多槽位的快速§a备份§r&§c回档§r插件
@@ -334,9 +335,9 @@ def share_backup(server, info, slot):
 			info_message(server, info, '[ERROR] WRONG SHARE PATH WTF')
 			return
 		else:
-			os.system('ssh root@192.168.0.0 "rm -rf {}/*" > nul'.format(SharePath))
+			os.system('ssh root@{} "rm -rf {}/*" > nul'.format(ShareAddress, SharePath))
 		for world in WorldNames:
-			os.system('scp -r {}/{} root@192.168.0.0:{}/{} > nul'.format(get_slot_folder(slot), world, SharePath, dir_name))
+			os.system('scp -r {}/{} root@{}:{}/{} > nul'.format(get_slot_folder(slot), world, ShareAddress, SharePath, dir_name))
 		info_message(server, info, '已经成功分享到内服云盘')
 	finally:
 		sharing_backup = False
