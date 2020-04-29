@@ -318,10 +318,10 @@ def kick_bots(server, info):
 
 def share_backup(server, info, slot):
 	global sharing_backup
-	if sharing_backup:
+	acquired = sharing_backup.acquire(blocking=False)
+	if not acquired:
 		info_message(server, info, '正在分享存档至云盘中，请不要重复输入')
 		return
-	sharing_backup = True
 	try:
 		ret = slot_check(server, info, slot)
 		if ret is None:
@@ -340,8 +340,7 @@ def share_backup(server, info, slot):
 			os.system('scp -r {}/{} root@{}:{}/{} > nul'.format(get_slot_folder(slot), world, ShareAddress, SharePath, dir_name))
 		info_message(server, info, '已经成功分享到内服云盘')
 	finally:
-		sharing_backup = False
-
+		sharing_backup.release()
 
 
 def list_backup(server, info):
