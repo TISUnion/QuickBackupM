@@ -7,10 +7,13 @@ import sys
 import time
 from threading import Lock
 
+
+'''================ 可修改常量开始 ================'''
 SlotCount = 5
 Prefix = '!!qb'
 BackupPath = './qb_multi'
 TurnOffAutoSave = True
+IgnoreSessionLock = True
 WorldNames = [
 	'world',
 ]
@@ -26,6 +29,8 @@ MinimumPermissionLevel = {
 }
 OverwriteBackupFolder = 'overwrite'
 ServerPath = './server'
+'''================ 可修改常量结束 ================'''
+
 HelpMessage = '''
 ------MCDR Multi Quick Backup------
 一个支持多槽位的快速§a备份§r&§c回档§r插件
@@ -79,8 +84,10 @@ def print_message(server, info, msg, tell=True):
 
 
 def copy_worlds(src, dst):
+	def filter_ignore(path, files):
+		return [file for file in files if file == 'session.lock' and IgnoreSessionLock]
 	for world in WorldNames:
-		shutil.copytree('{}/{}'.format(src, world), '{}/{}'.format(dst, world))
+		shutil.copytree('{}/{}'.format(src, world), '{}/{}'.format(dst, world), ignore=filter_ignore)
 
 
 def remove_worlds(folder):
@@ -182,22 +189,21 @@ def create_backup(server, info, comment):
 				server.reply(info, '插件重载，§a备份§r中断！')
 				return
 		slot_path = get_slot_folder(1)
-		try:
-			copy_worlds(ServerPath, slot_path)
-		except Exception as e:
-			info_message(server, info, '§a备份§r失败，错误代码{}'.format(e))
-		else:
-			slot_info = {'time': format_time()}
-			if comment is not None:
-				slot_info['comment'] = comment
-			with open('{}/info.json'.format(slot_path), 'w') as f:
-				if sys.version_info.major == 2:
-					json.dump(slot_info, f, indent=4, encoding='utf8')
-				else:
-					json.dump(slot_info, f, indent=4)
-			end_time = time.time()
-			info_message(server, info, '§a备份§r完成，耗时' + str(end_time - start_time)[:3] + '秒')
-			info_message(server, info, format_slot_info(info_dict=slot_info))
+
+		copy_worlds(ServerPath, slot_path)
+		slot_info = {'time': format_time()}
+		if comment is not None:
+			slot_info['comment'] = comment
+		with open('{}/info.json'.format(slot_path), 'w') as f:
+			if sys.version_info.major == 2:
+				json.dump(slot_info, f, indent=4, encoding='utf8')
+			else:
+				json.dump(slot_info, f, indent=4)
+		end_time = time.time()
+		info_message(server, info, '§a备份§r完成，耗时§6{}§r秒'.format(round(end_time - start_time, 1)))
+		info_message(server, info, format_slot_info(info_dict=slot_info))
+	except Exception as e:
+		info_message(server, info, '§a备份§r失败，错误代码{}'.format(e))
 	finally:
 		creating_backup.release()
 		if TurnOffAutoSave:

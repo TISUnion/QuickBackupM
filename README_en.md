@@ -77,6 +77,12 @@ Default: `TurnOffAutoSave = True`
 
 If turn off auto save when making backup or not
 
+### IgnoreSessionLock
+
+Default: `IgnoreSessionLock = True`
+
+If ignore file `session.lock` during backup, which can solve the back up failure problem caused by `session.lock` being occupied by the server
+
 ### WorldNames
 
 Default:

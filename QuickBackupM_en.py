@@ -7,10 +7,13 @@ import sys
 import time
 from threading import Lock
 
+
+'''================ Modifiable constant starts ================'''
 SlotCount = 5
 Prefix = '!!qb'
 BackupPath = './qb_multi'
 TurnOffAutoSave = True
+IgnoreSessionLock = True
 WorldNames = [
 	'world',
 ]
@@ -26,6 +29,9 @@ MinimumPermissionLevel = {
 }
 OverwriteBackupFolder = 'overwrite'
 ServerPath = './server'
+'''================ Modifiable constant ends ================'''
+
+
 HelpMessage = '''
 ------MCDR Multi Quick Backup------
 A plugin that supports multi slots world §abackup§r and backup §crestore§r
@@ -79,8 +85,10 @@ def print_message(server, info, msg, tell=True):
 
 
 def copy_worlds(src, dst):
+	def filter_ignore(path, files):
+		return [file for file in files if file == 'session.lock' and IgnoreSessionLock]
 	for world in WorldNames:
-		shutil.copytree('{}/{}'.format(src, world), '{}/{}'.format(dst, world))
+		shutil.copytree('{}/{}'.format(src, world), '{}/{}'.format(dst, world), ignore=filter_ignore)
 
 
 def remove_worlds(folder):
@@ -182,22 +190,21 @@ def create_backup(server, info, comment):
 				server.reply(info, 'Plugin unloaded, §aback up§r aborted!')
 				return
 		slot_path = get_slot_folder(1)
-		try:
-			copy_worlds(ServerPath, slot_path)
-		except Exception as e:
-			info_message(server, info, '§aBack up§r unsuccessfully, error code {}'.format(e))
-		else:
-			slot_info = {'time': format_time()}
-			if comment is not None:
-				slot_info['comment'] = comment
-			with open('{}/info.json'.format(slot_path), 'w') as f:
-				if sys.version_info.major == 2:
-					json.dump(slot_info, f, indent=4, encoding='utf8')
-				else:
-					json.dump(slot_info, f, indent=4)
-			end_time = time.time()
-			info_message(server, info, '§aBack up§r successfully, time cost ' + str(end_time - start_time)[:3] + 's')
-			info_message(server, info, format_slot_info(info_dict=slot_info))
+
+		copy_worlds(ServerPath, slot_path)
+		slot_info = {'time': format_time()}
+		if comment is not None:
+			slot_info['comment'] = comment
+		with open('{}/info.json'.format(slot_path), 'w') as f:
+			if sys.version_info.major == 2:
+				json.dump(slot_info, f, indent=4, encoding='utf8')
+			else:
+				json.dump(slot_info, f, indent=4)
+		end_time = time.time()
+		info_message(server, info, '§aBack up§r successfully, time cost ' + str(end_time - start_time)[:3] + 's')
+		info_message(server, info, format_slot_info(info_dict=slot_info))
+	except Exception as e:
+		info_message(server, info, '§aBack up§r unsuccessfully, error code {}'.format(e))
 	finally:
 		creating_backup.release()
 		if TurnOffAutoSave:

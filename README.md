@@ -77,6 +77,12 @@ mcd_root/
 
 是否在备份时临时关闭自动保存
 
+### IgnoreSessionLock
+
+默认值: `IgnoreSessionLock = True`
+
+是否在备份时忽略文件 `session.lock`。这可以解决 `session.lock` 被服务端占用导致备份失败的问题
+
 ### WorldNames
 
 默认值:
