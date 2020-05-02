@@ -320,10 +320,10 @@ def kick_bots(server, info):
 
 
 def getdirsize(dir):
-   size = 0
-   for root, dirs, files in os.walk(dir):
-	  size += sum([os.path.getsize(os.path.join(root, name)) for name in files])
-   return round((size/(1024*1024*1024)) , 4)
+	size = 0
+	for root, dirs, files in os.walk(dir):
+		size += sum([os.path.getsize(os.path.join(root, name)) for name in files])
+	return round((size/(1024*1024*1024)) , 4)
 	
 def list_backup(server, info):
 	global SizeWarnLimit
