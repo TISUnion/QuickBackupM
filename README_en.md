@@ -53,11 +53,11 @@ In MCDR `!!qb back` and `!!qb del` needs permission level `helper`
 
 Custom your QuickBackupM 
 
-### SizeWarnLimit
+### SizeDisplay
 
-Default: `SizeWarnLimit = 25`
+Default: `SizeDisplay = True`
 
-When the total backup footprint is less than this value, the number will shown in red when viewing the backup list, otherwise it'll shown in green.
+Whether the occupied space is displayed when viewing the backup list
 
 ### SlotCount
 
