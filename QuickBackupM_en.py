@@ -9,7 +9,7 @@ from threading import Lock
 
 
 '''================ Modifiable constant starts ================'''
-SizeWarnLimit = 25
+sizeDisplay = True
 SlotCount = 5
 Prefix = '!!qb'
 BackupPath = './qb_multi'
@@ -324,17 +324,13 @@ def getdirsize(dir):
 		size += sum([os.path.getsize(os.path.join(root, name)) for name in files])
 	return round((size/(1024*1024*1024)) , 4)
 	
-	
 def list_backup(server, info):
-	global SizeWarnLimit
-	size = getdirsize(BackupPath)
-	if(size >= SizeWarnLimit):
-		color = '§4'
-	else:
-		color = '§a'
+	global sizeDisplay
 	for i in range(SlotCount):
 		info_message(server, info, '[Slot §6{}§r] {}'.format(i + 1, format_slot_info(slot_number=i + 1)))
-	info_message(server, info, 'Space taken up by backup files：{}{} §rGB'.format(color, size))
+	if sizeDisplay:
+		size = getdirsize(BackupPath)
+		info_message(server, info, 'Space taken up by backup files：{}{} §rGB'.format(color, size))
 
 
 def trigger_abort(server, info):
