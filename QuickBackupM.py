@@ -9,7 +9,7 @@ from threading import Lock
 
 
 '''================ 可修改常量开始 ================'''
-SizeWarnLimit = 25
+SizeDisplay = True
 SlotCount = 5
 Prefix = '!!qb'
 BackupPath = './qb_multi'
@@ -326,15 +326,12 @@ def getdirsize(dir):
 	return round((size/(1024*1024*1024)) , 4)
 	
 def list_backup(server, info):
-	global SizeWarnLimit
-	size = getdirsize(BackupPath)
-	if(size >= SizeWarnLimit):
-		color = '§4'
-	else:
-		color = '§a'
+	global sizeDisplay
 	for i in range(SlotCount):
 		info_message(server, info, '[槽位§6{}§r] {}'.format(i + 1, format_slot_info(slot_number=i + 1)))
-	info_message(server, info, '备份总占用空间：{}{} §rGB'.format(color, size))
+	if sizeDisplay:
+		size = getdirsize(BackupPath)
+		info_message(server, info, '备份总占用空间：§a{} §rGB'.format(size))
 
 
 def trigger_abort(server, info):
