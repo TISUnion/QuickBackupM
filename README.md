@@ -53,11 +53,11 @@ mcd_root/
 
 调整这些常量的数值也就是在配置 QuickBackupM 插件
 
-### SizeWarnLimit
+### SizeDisplay
 
-默认值: `SizeWarnLimit = 25`
+默认值: `SizeDisplay = True`
 
-备份总占用空间小于这个值时，查看备份列表时显示为红色，否则显示为绿色
+查看备份列表是否显示占用空间
 
 ### SlotCount
 
