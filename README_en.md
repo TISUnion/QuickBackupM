@@ -5,7 +5,7 @@
 
 A plugin for multi slot back up / restore your world
 
-Compatible with [MCDaemon](https://github.com/kafuuchino-desu/MCDaemon) and [MCDReforged](https://github.com/Fallen-Breath/MCDReforged)
+Needs `0.8.2-alpha`+ [MCDReforged](https://github.com/Fallen-Breath/MCDReforged)
 
 The backup worlds will be store in folder qb_multi like below:
 ```
