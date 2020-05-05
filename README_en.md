@@ -7,6 +7,8 @@ A plugin for multi slot back up / restore your world
 
 Needs `0.8.2-alpha`+ [MCDReforged](https://github.com/Fallen-Breath/MCDReforged)
 
+![snapshot](https://raw.githubusercontent.com/TISUnion/QuickBackupM/master/snapshot_en.png)
+
 The backup worlds will be store in folder qb_multi like below:
 ```
 mcd_root/

@@ -7,6 +7,8 @@
 
 需要 `0.8.2-alpha` 以上的 [MCDReforged](https://github.com/Fallen-Breath/MCDReforged)
 
+![snapshot](https://raw.githubusercontent.com/TISUnion/QuickBackupM/master/snapshot.png)
+
 备份的存档将会存放至 qb_multi 文件夹中，文件目录格式如下：
 ```
 mcd_root/
