@@ -1,16 +1,19 @@
 # coding: utf8
-import copy
-import json
 import os
+import re
 import shutil
-import sys
 import time
 from threading import Lock
+from utils.rtext import *
 
+
+'''================ 可修改常量开始 ================'''
+SizeDisplay = True
 SlotCount = 5
 Prefix = '!!qb'
 BackupPath = './qb_multi'
 TurnOffAutoSave = True
+IgnoreSessionLock = True
 WorldNames = [
 	'world',
 ]
@@ -28,23 +31,24 @@ OverwriteBackupFolder = 'overwrite'
 ServerPath = './server'
 SharePath = '/home/shared'
 ShareAddress = '192.168.0.0'
+'''================ 可修改常量结束 ================'''
+
 HelpMessage = '''
-------MCDR Multi Quick Backup------
+------ MCDR Multi Quick Backup 20200505------
 一个支持多槽位的快速§a备份§r&§c回档§r插件
 §a【格式说明】§r
 §7{0}§r 显示帮助信息
-§7{0} make §e[<comment>]§r 创建一个储存至槽位§61§r的§a备份§r，并将后移已有槽位。§e<comment>§r为可选存档注释
-§7{0} back §6[<slot>]§r §c回档§r为槽位§61§r的存档。当§6<slot>§r参数被指定时将会§c回档§r为槽位§6<slot>§r
-§7{0} del §6[<slot>]§r §c删除§r槽位§6<slot>§r的存档。§r
-§7{0} confirm§r 在执行back后使用，再次确认是否进行§c回档§r
+§7{0} make §e[<cmt>]§r 创建一个储存至槽位§61§r的§a备份§r。§e<cmt>§r为可选注释
+§7{0} back §6[<slot>]§r §c回档§r为槽位§6<slot>§r的存档
+§7{0} del §6[<slot>]§r §c删除§r槽位§6<slot>§r的存档
+§7{0} confirm§r 再次确认是否进行§c回档§r
 §7{0} abort§r 在任何时候键入此指令可中断§c回档§r
 §7{0} list§r 显示各槽位的存档信息
-§7{0} share §6[<slot>]§r 分享存档至云盘
 当§6<slot>§r未被指定时默认选择槽位§61§r
 §a【例子】§r
-§7{0} make
+§7{0} make§r
 §7{0} make §e世吞完成§r
-§7{0} back
+§7{0} back§r
 §7{0} back §62§r
 '''.strip().format(Prefix)
 slot_selected = None
@@ -71,30 +75,28 @@ mcdr_root/
 '''
 
 
-def print_message(server, info, msg, tell=True):
-	for line in msg.splitlines():
-		if info.isPlayer:
-			if tell:
-				server.tell(info.player, line)
-			else:
-				server.say(line)
-		else:
-			print(line)
+def print_message(server, info, msg, tell=True, prefix='[QBM] '):
+	msg = prefix + msg
+	if info.is_player and not tell:
+		server.say(msg)
+	else:
+		server.reply(info, msg)
+
+
+def command_run(message, text, command):
+	return RText(message).set_hover_text(text).set_click_event(RAction.run_command, command)
 
 
 def copy_worlds(src, dst):
+	def filter_ignore(path, files):
+		return [file for file in files if file == 'session.lock' and IgnoreSessionLock]
 	for world in WorldNames:
-		shutil.copytree('{}/{}'.format(src, world), '{}/{}'.format(dst, world))
+		shutil.copytree('{}/{}'.format(src, world), '{}/{}'.format(dst, world), ignore=filter_ignore)
 
 
 def remove_worlds(folder):
 	for world in WorldNames:
 		shutil.rmtree('{}/{}'.format(folder, world))
-
-
-def info_message(server, info, msg, tell=False):
-	for line in msg.splitlines():
-		print_message(server, info, '[QBM] ' + line, tell)
 
 
 def get_slot_folder(slot):
@@ -107,8 +109,6 @@ def get_slot_info(slot):
 			info = json.load(f, encoding='utf8')
 		for key in info.keys():
 			value = info[key]
-			if sys.version_info.major == 2 and type(value) is unicode:
-				info[key] = value.encode('utf8')
 	except:
 		info = None
 	return info
@@ -142,26 +142,53 @@ def touch_backup_folder():
 		mkdir(get_slot_folder(i + 1))
 
 
+def slot_number_formater(slot):
+	flag_fail = False
+	if type(slot) is not int:
+		try:
+			slot = int(slot)
+		except ValueError:
+			flag_fail = True
+	if flag_fail or not 1 <= slot <= SlotCount:
+		return None
+	return slot
+
+
+def slot_check(server, info, slot):
+	slot = slot_number_formater(slot)
+	if slot is None:
+		print_message(server, info, '槽位输入错误，应输入一个位于[{}, {}]的数字'.format(1, SlotCount))
+		return None
+
+	slot_info = get_slot_info(slot)
+	if slot_info is None:
+		print_message(server, info, '槽位输入错误，槽位§6{}§r为空'.format(slot))
+		return None
+	return slot, slot_info
+
+
 def delete_backup(server, info, slot):
 	global creating_backup, restoring_backup
 	if creating_backup.locked() or restoring_backup.locked():
 		return
+	if slot_check(server, info, slot) is None:
+		return
 	try:
 		shutil.rmtree(get_slot_folder(slot))
-	except:
-		info_message(server, info, "§4删除失败，详情请参考见控制台错误输出")
+	except Exception as e:
+		print_message(server, info, RText('§4删除失败§r，详细错误信息请查看服务端后台').set_hover_text(e))
 	else:
-		info_message(server, info, "§a删除完成")
+		print_message(server, info, '§a删除完成§r')
 
 
 def create_backup(server, info, comment):
 	global creating_backup
 	acquired = creating_backup.acquire(blocking=False)
 	if not acquired:
-		info_message(server, info, '正在§a备份§r中，请不要重复输入')
+		print_message(server, info, '正在§a备份§r中，请不要重复输入')
 		return
 	try:
-		info_message(server, info, '§a备份§r中...请稍等')
+		print_message(server, info, '§a备份§r中...请稍等')
 		start_time = time.time()
 		touch_backup_folder()
 
@@ -186,51 +213,22 @@ def create_backup(server, info, comment):
 				server.reply(info, '插件重载，§a备份§r中断！')
 				return
 		slot_path = get_slot_folder(1)
-		try:
-			copy_worlds(ServerPath, slot_path)
-		except Exception as e:
-			info_message(server, info, '§a备份§r失败，错误代码{}'.format(e))
-		else:
-			slot_info = {'time': format_time()}
-			if comment is not None:
-				slot_info['comment'] = comment
-			with open('{}/info.json'.format(slot_path), 'w') as f:
-				if sys.version_info.major == 2:
-					json.dump(slot_info, f, indent=4, encoding='utf8')
-				else:
-					json.dump(slot_info, f, indent=4)
-			end_time = time.time()
-			info_message(server, info, '§a备份§r完成，耗时' + str(end_time - start_time)[:3] + '秒')
-			info_message(server, info, format_slot_info(info_dict=slot_info))
+
+		copy_worlds(ServerPath, slot_path)
+		slot_info = {'time': format_time()}
+		if comment is not None:
+			slot_info['comment'] = comment
+		with open('{}/info.json'.format(slot_path), 'w') as f:
+			json.dump(slot_info, f, indent=4)
+		end_time = time.time()
+		print_message(server, info, '§a备份§r完成，耗时§6{}§r秒'.format(round(end_time - start_time, 1)))
+		print_message(server, info, format_slot_info(info_dict=slot_info))
+	except Exception as e:
+		print_message(server, info, '§a备份§r失败，错误代码{}'.format(e))
 	finally:
 		creating_backup.release()
 		if TurnOffAutoSave:
 			server.execute('save-on')
-
-
-def slot_number_formater(slot):
-	flag_fail = False
-	if type(slot) is not int:
-		try:
-			slot = int(slot)
-		except ValueError:
-			flag_fail = True
-	if flag_fail or not 1 <= slot <= SlotCount:
-		return None
-	return slot
-
-
-def slot_check(server, info, slot):
-	slot = slot_number_formater(slot)
-	if slot is None:
-		info_message(server, info, '槽位输入错误，应输入一个位于[{}, {}]的数字'.format(1, SlotCount))
-		return None
-
-	slot_info = get_slot_info(slot)
-	if slot_info is None:
-		info_message(server, info, '槽位输入错误，此槽位为空')
-		return None
-	return slot, slot_info
 
 
 def restore_backup(server, info, slot):
@@ -242,85 +240,72 @@ def restore_backup(server, info, slot):
 	global slot_selected, abort_restore
 	slot_selected = slot
 	abort_restore = False
-	info_message(server, info, '准备将存档恢复至槽位§6{}§r， {}'.format(slot, format_slot_info(info_dict=slot_info)))
-	info_message(server, info, '使用§7{0} confirm§r 确认§c回档§r，§7{0} abort§r 取消'.format(Prefix))
+	print_message(server, info, '准备将存档恢复至槽位§6{}§r， {}'.format(slot, format_slot_info(info_dict=slot_info)))
+	print_message(
+		server, info,
+		command_run('使用§7{0} confirm§r 确认§c回档§r'.format(Prefix), '点击确认', '{0} confirm'.format(Prefix))
+		+ ', '
+		+ command_run('§7{0} abort§r 取消'.format(Prefix), '点击取消', '{0} abort'.format(Prefix))
+	)
 
 
 def confirm_restore(server, info):
 	global restoring_backup
 	acquired = restoring_backup.acquire(blocking=False)
 	if not acquired:
-		info_message(server, info, '正在准备§c回档§r中，请不要重复输入')
+		print_message(server, info, '正在准备§c回档§r中，请不要重复输入')
 		return
 	try:
 		global slot_selected
 		if slot_selected is None:
-			info_message(server, info, '没有什么需要确认的')
+			print_message(server, info, '没有什么需要确认的')
 			return
 		slot = slot_selected
 		slot_selected = None
 
-		info_message(server, info, '10秒后关闭服务器§c回档§r')
+		print_message(server, info, '10秒后关闭服务器§c回档§r')
 		for countdown in range(1, 10):
-			info_message(server, info,
-						 '还有{}秒，将§c回档§r为槽位§6{}§r， {}'.format(10 - countdown, slot, format_slot_info(slot_number=slot)))
+			print_message(server, info, command_run(
+				'还有{}秒，将§c回档§r为槽位§6{}§r，{}'.format(10 - countdown, slot, format_slot_info(slot_number=slot)),
+				'点击终止回档！',
+				'{} abort'.format(Prefix)
+			))
 			for i in range(10):
 				time.sleep(0.1)
 				global abort_restore
 				if abort_restore:
-					info_message(server, info, '§c回档§r被中断！')
+					print_message(server, info, '§c回档§r被中断！')
 					return
 
-		kick_bots(server, info)
 		server.stop()
-		# MCDaemon
-		if sys.version_info.major == 2:
-			print('[QBM] Wait for up to 10s for server to stop')
-			time.sleep(10)
-		# MCDReforged
-		else:
-			print('[QBM] Wait for server to stop')
-			while server.is_server_running():
-				time.sleep(0.1)
+		server.logger.info('[QBM] Wait for server to stop')
+		server.wait_for_start()
 
-		print('[QBM] Backup current world to avoid idiot')
+		server.logger.info('[QBM] Backup current world to avoid idiot')
 		overwrite_backup_path = BackupPath + '/' + OverwriteBackupFolder
 		if os.path.exists(overwrite_backup_path):
 			shutil.rmtree(overwrite_backup_path)
 		copy_worlds(ServerPath, overwrite_backup_path)
 		with open('{}/info.txt'.format(overwrite_backup_path), 'w') as f:
-			f.write('Overwrite time: {}\nConfirm by: {}'.format(format_time(),
-																info.player if info.isPlayer else '$Console$'))
+			f.write('Overwrite time: {}\n'.format(format_time()))
+			f.write('Confirmed by: {}'.format(info.player if info.is_player else '$Console$'))
 
 		slot_folder = get_slot_folder(slot)
-		print('[QBM] Restore backup ' + slot_folder)
+		server.logger.info('[QBM] Deleting world')
 		remove_worlds(ServerPath)
-		time.sleep(1)
+		server.logger.info('[QBM] Restore backup ' + slot_folder)
 		copy_worlds(slot_folder, ServerPath)
-		print('[QBM] Wait for another 5s before server starts')
-		time.sleep(5)
 
 		server.start()
 	finally:
 		restoring_backup.release()
 
 
-def kick_bots(server, info):
-	try:
-		import mcdbot
-		import copy
-		iinfo = copy.deepcopy(info)
-		iinfo.content = '!!bot kickall'
-		mcdbot.onServerInfo(server, iinfo)
-	except:
-		pass
-
-
 def share_backup(server, info, slot):
 	global sharing_backup
 	acquired = sharing_backup.acquire(blocking=False)
 	if not acquired:
-		info_message(server, info, '正在分享存档至云盘中，请不要重复输入')
+		print_message(server, info, '正在分享存档至云盘中，请不要重复输入')
 		return
 	try:
 		ret = slot_check(server, info, slot)
@@ -330,89 +315,129 @@ def share_backup(server, info, slot):
 			slot, slot_info = ret
 
 		dir_name = slot_info['time'].replace(' ', '_')
-		info_message(server, info, '传输中...请稍等')
+		print_message(server, info, '传输中...请稍等')
 		if SharePath == '':  # wtf r u doing
-			info_message(server, info, '[ERROR] WRONG SHARE PATH WTF')
+			print_message(server, info, '[ERROR] WRONG SHARE PATH WTF')
 			return
 		else:
 			os.system('ssh root@{} "rm -rf {}/*" > nul'.format(ShareAddress, SharePath))
 		for world in WorldNames:
 			os.system('scp -r {}/{} root@{}:{}/{} > nul'.format(get_slot_folder(slot), world, ShareAddress, SharePath, dir_name))
-		info_message(server, info, '已经成功分享到内服云盘')
+		print_message(server, info, '已经成功分享到内服云盘')
 	finally:
 		sharing_backup.release()
 
 
 def list_backup(server, info):
+	def get_dir_size(dir):
+		size = 0
+		for root, dirs, files in os.walk(dir):
+			size += sum([os.path.getsize(os.path.join(root, name)) for name in files])
+		if size < 2 ** 30:
+			return f'{round(size / 2 ** 20, 2)} MB'
+		else:
+			return f'{round(size / 2 ** 30, 2)} GB'
+
+	print_message(server, info, f'共有 §6{SlotCount}§r 个槽位')
 	for i in range(SlotCount):
-		info_message(server, info, '[槽位§6{}§r] {}'.format(i + 1, format_slot_info(slot_number=i + 1)))
+		j = i + 1
+		print_message(
+			server, info,
+			RTextList(
+				f'[槽位§6{j}§r] e',
+				RText('[▷] ', color=RColor.green)
+					.set_hover_text(f'点击回档至槽位§6{j}§r')
+					.set_click_event(RAction.run_command, f'{Prefix} back {j}'),
+				RText('[×] ', color=RColor.red)
+					.set_hover_text(f'点击删除槽位§6{j}§r')
+					.set_click_event(RAction.suggest_command, f'{Prefix} del {j}'),
+				format_slot_info(slot_number=j)
+			),
+			prefix=''
+		)
+	if SizeDisplay:
+		print_message(server, info, '备份总占用空间: §a{}§r'.format(get_dir_size(BackupPath)))
 
 
 def trigger_abort(server, info):
 	global abort_restore, slot_selected
 	abort_restore = True
 	slot_selected = None
-	info_message(server, info, '终止操作！')
+	print_message(server, info, '终止操作！')
 
 
-def onServerInfo(server, info):
-	content = info.content
-	if content == 'Saved the game' and not info.isPlayer:
-		global game_saved
-		game_saved = True
-	if not info.isPlayer and content.endswith('<--[HERE]'):
-		content = content.replace('<--[HERE]', '')
-
-	command = content.split()
-	if len(command) == 0 or command[0] != Prefix:
-		return
-	del command[0]
-
-	if len(command) == 0:
-		print_message(server, info, HelpMessage)
-		return
-
-	cmdLen = len(command)
-	# MCDR permission check
-	global MinimumPermissionLevel
-	if hasattr(server, 'MCDR') and cmdLen >= 1 and command[0] in MinimumPermissionLevel.keys():
-		if server.get_permission_level(info) < MinimumPermissionLevel[command[0]]:
-			print_message(server, info, '§c权限不足！§r')
-			return
-	# make [<comment>]
-	if cmdLen >= 1 and command[0] == 'make':
-		comment = content.replace('{} make'.format(Prefix), '', 1).lstrip(' ') if cmdLen >= 1 else None
-		create_backup(server, info, comment)
-	# back [<slot>]
-	elif cmdLen in [1, 2] and command[0] == 'back':
-		restore_backup(server, info, command[1] if cmdLen == 2 else '1')
-	# del
-	elif cmdLen in [1, 2] and command[0] == 'del':
-		delete_backup(server, info, command[1] if cmdLen == 2 else '1')
-	# confirm
-	elif cmdLen == 1 and command[0] == 'confirm':
-		confirm_restore(server, info)
-	# abort
-	elif cmdLen == 1 and command[0] == 'abort':
-		trigger_abort(server, info)
-	# list
-	elif cmdLen == 1 and command[0] == 'list':
-		list_backup(server, info)
-	# share [<slot>]
-	elif cmdLen in [1, 2] and command[0] == 'share':
-		share_backup(server, info, command[1] if cmdLen == 2 else '1')
-	else:
-		print_message(server, info, '参数错误！请输入§7' + Prefix + '§r以获取插件帮助')
+def print_help_message(server, info):
+	for line in HelpMessage.splitlines():
+		prefix = re.search(r'(?<=§7){}[\w ]*(?=§)'.format(Prefix), line)
+		if prefix is not None:
+			print_message(server, info, RText(line).set_click_event(RAction.suggest_command, prefix.group()), prefix='')
+		else:
+			print_message(server, info, line, prefix='')
 
 
 def on_info(server, info):
-	info2 = copy.deepcopy(info)
-	info2.isPlayer = info2.is_player
-	onServerInfo(server, info2)
+	if not info.is_user:
+		if info.content == 'Saved the game':
+			global game_saved
+			game_saved = True
+		return
+
+	command = info.content.split()
+	if len(command) == 0 or command[0] != Prefix:
+		return
+
+	cmd_len = len(command)
+
+	# MCDR permission check
+	global MinimumPermissionLevel
+	if hasattr(server, 'MCDR') and cmd_len >= 2 and command[0] in MinimumPermissionLevel.keys():
+		if server.get_permission_level(info) < MinimumPermissionLevel[command[0]]:
+			print_message(server, info, '§c权限不足！§r')
+			return
+
+	# !!qb
+	if cmd_len == 1:
+		print_help_message(server, info)
+
+	# !!qb make [<comment>]
+	elif cmd_len >= 2 and command[1] == 'make':
+		comment = info.content.replace('{} make'.format(Prefix), '', 1).lstrip(' ')
+		create_backup(server, info, comment if len(comment) > 0 else None)
+
+	# !!qb back [<slot>]
+	elif cmd_len in [2, 3] and command[1] == 'back':
+		restore_backup(server, info, command[2] if cmd_len == 3 else '1')
+
+	# !!qb confirm
+	elif cmd_len == 2 and command[1] == 'confirm':
+		confirm_restore(server, info)
+
+	# !!qb abort
+	elif cmd_len == 2 and command[1] == 'abort':
+		trigger_abort(server, info)
+
+	# !!qb list
+	elif cmd_len == 2 and command[1] == 'list':
+		list_backup(server, info)
+
+	# !!qb delete
+	elif cmd_len in [2, 3] and command[1] == 'del':
+		delete_backup(server, info, command[2] if cmd_len == 3 else '1')
+
+	# share [<slot>]
+	elif cmd_len in [2, 3] and command[1] == 'share':
+		share_backup(server, info, command[2] if cmd_len == 3 else '1')
+
+	else:
+		print_message(server, info, command_run(
+			'参数错误！请输入§7{}§r以获取插件帮助'.format(Prefix),
+			'点击查看帮助',
+			Prefix
+		))
 
 
 def on_load(server, old):
-	server.add_help_message(Prefix, '备份/回档，{}槽位'.format(SlotCount))
+	server.add_help_message(Prefix, command_run('§a备份§r/§c回档§r，§6{}§r槽位'.format(SlotCount), '点击查看帮助信息', Prefix))
 	global creating_backup, restoring_backup, sharing_backup
 	if hasattr(old, 'creating_backup') and type(old.creating_backup) == type(creating_backup):
 		creating_backup = old.creating_backup
@@ -420,7 +445,7 @@ def on_load(server, old):
 		restoring_backup = old.restoring_backup
 	if hasattr(old, 'sharing_backup') and type(old.sharing_backup) == type(sharing_backup):
 		sharing_backup = old.sharing_backup
-
+		
 
 def on_unload(server):
 	global abort_restore, plugin_unloaded
