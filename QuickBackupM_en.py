@@ -32,7 +32,7 @@ ServerPath = './server'
 '''================ Modifiable constant ends ================'''
 
 HelpMessage = '''
-------MCDR Multi Quick Backup------
+------ MCDR Multi Quick Backup 20200505 ------
 A plugin that supports multi slots world §abackup§r and backup §crestore§r
 §a[Format]§r
 §7{0}§r Display help message
@@ -43,11 +43,6 @@ A plugin that supports multi slots world §abackup§r and backup §crestore§r
 §7{0} abort§r Abort backup §crestoring§r
 §7{0} list§r Display slot information
 When §6<slot>§r is not set the default value is §61§r
-§a[Example]§r
-§7{0} make§r
-§7{0} make §eworld eater done§r
-§7{0} back§r
-§7{0} back §62§r
 '''.strip().format(Prefix)
 slot_selected = None
 abort_restore = False
@@ -308,7 +303,7 @@ def list_backup(server, info):
 		else:
 			return f'{round(size / 2 ** 30, 2)} GB'
 
-	print_message(server, info, f'There are §6{SlotCount}§r slots')
+	print_message(server, info, '§a[Slot Information]§r', prefix='')
 	for i in range(SlotCount):
 		j = i + 1
 		print_message(
@@ -325,8 +320,6 @@ def list_backup(server, info):
 			),
 			prefix=''
 		)
-	if SizeDisplay:
-		print_message(server, info, 'Total space consumed: §a{}§r'.format(get_dir_size(BackupPath)))
 
 
 def trigger_abort(server, info):
@@ -337,12 +330,24 @@ def trigger_abort(server, info):
 
 
 def print_help_message(server, info):
+	if info.is_player:
+		server.reply(info, '')
 	for line in HelpMessage.splitlines():
 		prefix = re.search(r'(?<=§7){}[\w ]*(?=§)'.format(Prefix), line)
 		if prefix is not None:
 			print_message(server, info, RText(line).set_click_event(RAction.suggest_command, prefix.group()), prefix='')
 		else:
 			print_message(server, info, line, prefix='')
+	list_backup(server, info)
+	if SizeDisplay:
+		print_message(server, info, 'Total space consumed: §a{}§r'.format(get_dir_size(BackupPath)))
+	print_message(
+		server, info,
+		RText('>>> §aClick me to create a backup§r <<<')
+			.h('Remember to write the comment')
+			.c(RAction.suggest_command, f'{Prefix} make I''m a comment'),
+		prefix=''
+	)
 
 
 def on_info(server, info):
@@ -360,7 +365,7 @@ def on_info(server, info):
 
 	# MCDR permission check
 	global MinimumPermissionLevel
-	if hasattr(server, 'MCDR') and cmd_len >= 2 and command[0] in MinimumPermissionLevel.keys():
+	if cmd_len >= 2 and command[0] in MinimumPermissionLevel.keys():
 		if server.get_permission_level(info) < MinimumPermissionLevel[command[0]]:
 			print_message(server, info, '§cPermission denied§r')
 			return
@@ -396,8 +401,8 @@ def on_info(server, info):
 
 	else:
 		print_message(server, info, command_run(
-			'Unknown command, input §7{}§r for help'.format(Prefix),
-			'click to check help message',
+			'Unknown command, input §7{}§r for more information'.format(Prefix),
+			'click to see help',
 			Prefix
 		))
 

@@ -32,7 +32,7 @@ ServerPath = './server'
 '''================ 可修改常量结束 ================'''
 
 HelpMessage = '''
------- MCDR Multi Quick Backup 20200505------
+------ MCDR Multi Quick Backup 20200505 ------
 一个支持多槽位的快速§a备份§r&§c回档§r插件
 §a【格式说明】§r
 §7{0}§r 显示帮助信息
@@ -43,11 +43,6 @@ HelpMessage = '''
 §7{0} abort§r 在任何时候键入此指令可中断§c回档§r
 §7{0} list§r 显示各槽位的存档信息
 当§6<slot>§r未被指定时默认选择槽位§61§r
-§a【例子】§r
-§7{0} make§r
-§7{0} make §e世吞完成§r
-§7{0} back§r
-§7{0} back §62§r
 '''.strip().format(Prefix)
 slot_selected = None
 abort_restore = False
@@ -308,25 +303,21 @@ def list_backup(server, info):
 		else:
 			return f'{round(size / 2 ** 30, 2)} GB'
 
-	print_message(server, info, f'共有 §6{SlotCount}§r 个槽位')
+	print_message(server, info, '§a【槽位信息】§r', prefix='')
 	for i in range(SlotCount):
 		j = i + 1
 		print_message(
 			server, info,
 			RTextList(
 				f'[槽位§6{j}§r] ',
-				RText('[▷] ', color=RColor.green)
-					.set_hover_text(f'点击回档至槽位§6{j}§r')
-					.set_click_event(RAction.run_command, f'{Prefix} back {j}'),
-				RText('[×] ', color=RColor.red)
-					.set_hover_text(f'点击删除槽位§6{j}§r')
-					.set_click_event(RAction.suggest_command, f'{Prefix} del {j}'),
+				RText('[▷] ', color=RColor.green).h(f'点击回档至槽位§6{j}§r').c(RAction.run_command, f'{Prefix} back {j}'),
+				RText('[×] ', color=RColor.red).h(f'点击删除槽位§6{j}§r').c(RAction.suggest_command, f'{Prefix} del {j}'),
 				format_slot_info(slot_number=j)
 			),
 			prefix=''
 		)
 	if SizeDisplay:
-		print_message(server, info, '备份总占用空间: §a{}§r'.format(get_dir_size(BackupPath)))
+		print_message(server, info, '备份总占用空间: §a{}§r'.format(get_dir_size(BackupPath)), prefix='')
 
 
 def trigger_abort(server, info):
@@ -337,12 +328,22 @@ def trigger_abort(server, info):
 
 
 def print_help_message(server, info):
+	if info.is_player:
+		server.reply(info, '')
 	for line in HelpMessage.splitlines():
 		prefix = re.search(r'(?<=§7){}[\w ]*(?=§)'.format(Prefix), line)
 		if prefix is not None:
 			print_message(server, info, RText(line).set_click_event(RAction.suggest_command, prefix.group()), prefix='')
 		else:
 			print_message(server, info, line, prefix='')
+	list_backup(server, info)
+	print_message(
+		server, info,
+		RText('>>> §a点我创建一个备份§r <<<')
+			.h('记得修改注释')
+			.c(RAction.suggest_command, f'{Prefix} make 我是一个注释'),
+		prefix=''
+	)
 
 
 def on_info(server, info):
@@ -360,7 +361,7 @@ def on_info(server, info):
 
 	# MCDR permission check
 	global MinimumPermissionLevel
-	if hasattr(server, 'MCDR') and cmd_len >= 2 and command[0] in MinimumPermissionLevel.keys():
+	if cmd_len >= 2 and command[0] in MinimumPermissionLevel.keys():
 		if server.get_permission_level(info) < MinimumPermissionLevel[command[0]]:
 			print_message(server, info, '§c权限不足！§r')
 			return
@@ -396,7 +397,7 @@ def on_info(server, info):
 
 	else:
 		print_message(server, info, command_run(
-			'参数错误！请输入§7{}§r以获取插件帮助'.format(Prefix),
+			'参数错误！请输入§7{}§r以获取插件信息'.format(Prefix),
 			'点击查看帮助',
 			Prefix
 		))
