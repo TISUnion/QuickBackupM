@@ -34,7 +34,7 @@ ServerPath = './server'
 HelpMessage = '''
 ------ MCDR Multi Quick Backup 20200505 ------
 A plugin that supports multi slots world §abackup§r and backup §crestore§r
-§a[Format]§r
+§d[Format]§r
 §7{0}§r Display help message
 §7{0} make §e[<comment>]§r Make a §abackup§r to slot §61§r. §e<comment>§r is an optional comment message
 §7{0} back §6[<slot>]§r §cRestore§r the world to slot §6<slot>§r
@@ -293,6 +293,13 @@ def confirm_restore(server, info):
 		restoring_backup.release()
 
 
+def trigger_abort(server, info):
+	global abort_restore, slot_selected
+	abort_restore = True
+	slot_selected = None
+	print_message(server, info, 'Operation terminated!')
+
+
 def list_backup(server, info, size_display=SizeDisplay):
 	def get_dir_size(dir):
 		size = 0
@@ -303,7 +310,7 @@ def list_backup(server, info, size_display=SizeDisplay):
 		else:
 			return f'{round(size / 2 ** 30, 2)} GB'
 
-	print_message(server, info, '§a[Slot Information]§r', prefix='')
+	print_message(server, info, '§d[Slot Information]§r', prefix='')
 	for i in range(SlotCount):
 		j = i + 1
 		print_message(
@@ -324,13 +331,6 @@ def list_backup(server, info, size_display=SizeDisplay):
 		print_message(server, info, 'Total space consumed: §a{}§r'.format(get_dir_size(BackupPath)))
 
 
-def trigger_abort(server, info):
-	global abort_restore, slot_selected
-	abort_restore = True
-	slot_selected = None
-	print_message(server, info, 'Operation terminated!')
-
-
 def print_help_message(server, info):
 	if info.is_player:
 		server.reply(info, '')
@@ -343,10 +343,7 @@ def print_help_message(server, info):
 	list_backup(server, info, size_display=False)
 	print_message(
 		server, info,
-		RText('>>> §aClick me to create a backup§r <<<')
-			.h('Remember to write the comment')
-			.c(RAction.suggest_command, f'{Prefix} make I''m a comment'),
-		'§a[Hotbar]§r' + '\n' +
+		'§d[Hotbar]§r' + '\n' +
 		RText('>>> §aClick me to create a backup§r <<<')
 			.h('Remember to write the comment')
 			.c(RAction.suggest_command, f'{Prefix} make I''m a comment') + '\n' +
