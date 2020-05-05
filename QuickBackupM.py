@@ -341,18 +341,14 @@ def list_backup(server, info):
 			server, info,
 			RTextList(
 				f'[槽位§6{j}§r] ',
-				RText('[▷] ', color=RColor.green)
-					.set_hover_text(f'点击回档至槽位§6{j}§r')
-					.set_click_event(RAction.run_command, f'{Prefix} back {j}'),
-				RText('[×] ', color=RColor.red)
-					.set_hover_text(f'点击删除槽位§6{j}§r')
-					.set_click_event(RAction.suggest_command, f'{Prefix} del {j}'),
+				RText('[▷] ', color=RColor.green).h(f'点击回档至槽位§6{j}§r').c(RAction.run_command, f'{Prefix} back {j}'),
+				RText('[×] ', color=RColor.red).h(f'点击删除槽位§6{j}§r').c(RAction.suggest_command, f'{Prefix} del {j}'),
 				format_slot_info(slot_number=j)
 			),
 			prefix=''
 		)
 	if SizeDisplay:
-		print_message(server, info, '备份总占用空间: §a{}§r'.format(get_dir_size(BackupPath)))
+		print_message(server, info, '备份总占用空间: §a{}§r'.format(get_dir_size(BackupPath)), prefix='')
 
 
 def trigger_abort(server, info):
@@ -363,6 +359,8 @@ def trigger_abort(server, info):
 
 
 def print_help_message(server, info):
+	if info.is_player:
+		server.reply(info, '')
 	for line in HelpMessage.splitlines():
 		prefix = re.search(r'(?<=§7){}[\w ]*(?=§)'.format(Prefix), line)
 		if prefix is not None:
@@ -394,7 +392,7 @@ def on_info(server, info):
 
 	# MCDR permission check
 	global MinimumPermissionLevel
-	if hasattr(server, 'MCDR') and cmd_len >= 2 and command[0] in MinimumPermissionLevel.keys():
+	if cmd_len >= 2 and command[0] in MinimumPermissionLevel.keys():
 		if server.get_permission_level(info) < MinimumPermissionLevel[command[0]]:
 			print_message(server, info, '§c权限不足！§r')
 			return
