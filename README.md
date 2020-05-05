@@ -53,6 +53,12 @@ mcd_root/
 
 调整这些常量的数值也就是在配置 QuickBackupM 插件
 
+### SizeDisplay
+
+默认值: `SizeDisplay = True`
+
+查看备份列表是否显示占用空间
+
 ### SlotCount
 
 默认值: `SlotCount = 5`

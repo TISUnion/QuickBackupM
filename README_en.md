@@ -53,6 +53,12 @@ In MCDR `!!qb back` and `!!qb del` needs permission level `helper`
 
 Custom your QuickBackupM 
 
+### SizeDisplay
+
+Default: `SizeDisplay = True`
+
+Whether the occupied space is displayed when viewing the backup list
+
 ### SlotCount
 
 Default: `SlotCount = 5`

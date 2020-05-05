@@ -9,6 +9,7 @@ from threading import Lock
 
 
 '''================ Modifiable constant starts ================'''
+sizeDisplay = True
 SlotCount = 5
 Prefix = '!!qb'
 BackupPath = './qb_multi'
@@ -317,10 +318,19 @@ def kick_bots(server, info):
 	except:
 		pass
 
-
+def getdirsize(dir):
+	size = 0
+	for root, dirs, files in os.walk(dir):
+		size += sum([os.path.getsize(os.path.join(root, name)) for name in files])
+	return round((size/(1024*1024*1024)) , 4)
+	
 def list_backup(server, info):
+	global sizeDisplay
 	for i in range(SlotCount):
 		info_message(server, info, '[Slot §6{}§r] {}'.format(i + 1, format_slot_info(slot_number=i + 1)))
+	if sizeDisplay:
+		size = getdirsize(BackupPath)
+		info_message(server, info, 'Space taken up by backup files：{}{} §rGB'.format(color, size))
 
 
 def trigger_abort(server, info):
