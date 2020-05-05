@@ -46,11 +46,6 @@ HelpMessage = '''
 §7{0} list§r 显示各槽位的存档信息
 §7{0} share §6[<slot>]§r 分享存档至云盘
 当§6<slot>§r未被指定时默认选择槽位§61§r
-§a【例子】§r
-§7{0} make§r
-§7{0} make §e世吞完成§r
-§7{0} back§r
-§7{0} back §62§r
 '''.strip().format(Prefix)
 slot_selected = None
 abort_restore = False
@@ -374,6 +369,14 @@ def print_help_message(server, info):
 			print_message(server, info, RText(line).set_click_event(RAction.suggest_command, prefix.group()), prefix='')
 		else:
 			print_message(server, info, line, prefix='')
+	list_backup(server, info)
+	print_message(
+		server, info,
+		RText('>>> §a点我创建一个备份§r <<<')
+			.h('记得修改注释')
+			.c(RAction.suggest_command, f'{Prefix} make 大叔来了'),
+		prefix=''
+	)
 
 
 def on_info(server, info):
