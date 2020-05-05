@@ -391,7 +391,7 @@ def on_info(server, info):
 		list_backup(server, info)
 
 	# !!qb delete
-	elif cmd_len in [2, 3] and command[0] == 'del':
+	elif cmd_len in [2, 3] and command[1] == 'del':
 		delete_backup(server, info, command[2] if cmd_len == 3 else '1')
 
 	else:
@@ -404,6 +404,11 @@ def on_info(server, info):
 
 def on_load(server, old):
 	server.add_help_message(Prefix, command_run('§a备份§r/§c回档§r，§6{}§r槽位'.format(SlotCount), '点击查看帮助信息', Prefix))
+	global creating_backup, restoring_backup
+	if hasattr(old, 'creating_backup') and type(old.creating_backup) == type(creating_backup):
+		creating_backup = old.creating_backup
+	if hasattr(old, 'restoring_backup') and type(old.restoring_backup) == type(restoring_backup):
+		restoring_backup = old.restoring_backup
 
 
 def on_unload(server):
