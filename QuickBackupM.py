@@ -44,6 +44,7 @@ HelpMessage = '''
 §7{0} confirm§r 再次确认是否进行§c回档§r
 §7{0} abort§r 在任何时候键入此指令可中断§c回档§r
 §7{0} list§r 显示各槽位的存档信息
+§7{0} share §6[<slot>]§r 分享存档至云盘
 当§6<slot>§r未被指定时默认选择槽位§61§r
 §a【例子】§r
 §7{0} make§r
