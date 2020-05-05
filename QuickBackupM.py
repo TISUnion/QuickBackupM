@@ -293,7 +293,7 @@ def confirm_restore(server, info):
 		restoring_backup.release()
 
 
-def list_backup(server, info):
+def list_backup(server, info, size_display=SizeDisplay):
 	def get_dir_size(dir):
 		size = 0
 		for root, dirs, files in os.walk(dir):
@@ -316,7 +316,7 @@ def list_backup(server, info):
 			),
 			prefix=''
 		)
-	if SizeDisplay:
+	if size_display:
 		print_message(server, info, '备份总占用空间: §a{}§r'.format(get_dir_size(BackupPath)), prefix='')
 
 
@@ -336,12 +336,16 @@ def print_help_message(server, info):
 			print_message(server, info, RText(line).set_click_event(RAction.suggest_command, prefix.group()), prefix='')
 		else:
 			print_message(server, info, line, prefix='')
-	list_backup(server, info)
+	list_backup(server, info, size_display=False)
 	print_message(
 		server, info,
+		'§a【快捷操作】§r' + '\n' +
 		RText('>>> §a点我创建一个备份§r <<<')
 			.h('记得修改注释')
-			.c(RAction.suggest_command, f'{Prefix} make 我是一个注释'),
+			.c(RAction.suggest_command, f'{Prefix} make 我是一个注释') + '\n' +
+		RText('>>> §c点我回档至最近的备份§r <<<')
+			.h('也就是回档至第一个槽位')
+			.c(RAction.suggest_command, f'{Prefix} back'),
 		prefix=''
 	)
 

@@ -293,7 +293,7 @@ def confirm_restore(server, info):
 		restoring_backup.release()
 
 
-def list_backup(server, info):
+def list_backup(server, info, size_display=SizeDisplay):
 	def get_dir_size(dir):
 		size = 0
 		for root, dirs, files in os.walk(dir):
@@ -320,6 +320,8 @@ def list_backup(server, info):
 			),
 			prefix=''
 		)
+	if size_display:
+		print_message(server, info, 'Total space consumed: §a{}§r'.format(get_dir_size(BackupPath)))
 
 
 def trigger_abort(server, info):
@@ -338,14 +340,19 @@ def print_help_message(server, info):
 			print_message(server, info, RText(line).set_click_event(RAction.suggest_command, prefix.group()), prefix='')
 		else:
 			print_message(server, info, line, prefix='')
-	list_backup(server, info)
-	if SizeDisplay:
-		print_message(server, info, 'Total space consumed: §a{}§r'.format(get_dir_size(BackupPath)))
+	list_backup(server, info, size_display=False)
 	print_message(
 		server, info,
 		RText('>>> §aClick me to create a backup§r <<<')
 			.h('Remember to write the comment')
 			.c(RAction.suggest_command, f'{Prefix} make I''m a comment'),
+		'§a[Hotbar]§r' + '\n' +
+		RText('>>> §aClick me to create a backup§r <<<')
+			.h('Remember to write the comment')
+			.c(RAction.suggest_command, f'{Prefix} make I''m a comment') + '\n' +
+		RText('>>> §cClick me to restore to the latest backup§r <<<')
+			.h('as known as the first slot')
+			.c(RAction.suggest_command, f'{Prefix} back'),
 		prefix=''
 	)
 
