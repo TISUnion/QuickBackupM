@@ -314,7 +314,7 @@ def list_backup(server, info):
 		print_message(
 			server, info,
 			RTextList(
-				f'[槽位§6{j}§r] e',
+				f'[槽位§6{j}§r] ',
 				RText('[▷] ', color=RColor.green)
 					.set_hover_text(f'点击回档至槽位§6{j}§r')
 					.set_click_event(RAction.run_command, f'{Prefix} back {j}'),
