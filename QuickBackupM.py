@@ -6,7 +6,6 @@ import time
 from threading import Lock
 from utils.rtext import *
 
-
 '''================ 可修改常量开始 ================'''
 SizeDisplay = True
 SlotCount = 5
@@ -36,7 +35,7 @@ ShareAddress = '192.168.0.0'
 HelpMessage = '''
 ------ MCDR Multi Quick Backup 20200505------
 一个支持多槽位的快速§a备份§r&§c回档§r插件
-§a【格式说明】§r
+§d【格式说明】§r
 §7{0}§r 显示帮助信息
 §7{0} make §e[<cmt>]§r 创建一个储存至槽位§61§r的§a备份§r。§e<cmt>§r为可选注释
 §7{0} back §6[<slot>]§r §c回档§r为槽位§6<slot>§r的存档
@@ -86,6 +85,7 @@ def command_run(message, text, command):
 def copy_worlds(src, dst):
 	def filter_ignore(path, files):
 		return [file for file in files if file == 'session.lock' and IgnoreSessionLock]
+
 	for world in WorldNames:
 		shutil.copytree('{}/{}'.format(src, world), '{}/{}'.format(dst, world), ignore=filter_ignore)
 
@@ -297,6 +297,13 @@ def confirm_restore(server, info):
 		restoring_backup.release()
 
 
+def trigger_abort(server, info):
+	global abort_restore, slot_selected
+	abort_restore = True
+	slot_selected = None
+	print_message(server, info, '终止操作！')
+
+
 def share_backup(server, info, slot):
 	global sharing_backup
 	acquired = sharing_backup.acquire(blocking=False)
@@ -318,13 +325,14 @@ def share_backup(server, info, slot):
 		else:
 			os.system('ssh root@{} "rm -rf {}/*" > nul'.format(ShareAddress, SharePath))
 		for world in WorldNames:
-			os.system('scp -r {}/{} root@{}:{}/{} > nul'.format(get_slot_folder(slot), world, ShareAddress, SharePath, dir_name))
+			os.system('scp -r {}/{} root@{}:{}/{} > nul'.format(get_slot_folder(slot), world, ShareAddress, SharePath,
+																dir_name))
 		print_message(server, info, '已经成功分享到内服云盘')
 	finally:
 		sharing_backup.release()
 
 
-def list_backup(server, info):
+def list_backup(server, info, size_display=SizeDisplay):
 	def get_dir_size(dir):
 		size = 0
 		for root, dirs, files in os.walk(dir):
@@ -334,7 +342,7 @@ def list_backup(server, info):
 		else:
 			return f'{round(size / 2 ** 30, 2)} GB'
 
-	print_message(server, info, f'共有 §6{SlotCount}§r 个槽位')
+	print_message(server, info, '§d【槽位信息】§r', prefix='')
 	for i in range(SlotCount):
 		j = i + 1
 		print_message(
@@ -347,15 +355,8 @@ def list_backup(server, info):
 			),
 			prefix=''
 		)
-	if SizeDisplay:
+	if size_display:
 		print_message(server, info, '备份总占用空间: §a{}§r'.format(get_dir_size(BackupPath)), prefix='')
-
-
-def trigger_abort(server, info):
-	global abort_restore, slot_selected
-	abort_restore = True
-	slot_selected = None
-	print_message(server, info, '终止操作！')
 
 
 def print_help_message(server, info):
@@ -367,12 +368,16 @@ def print_help_message(server, info):
 			print_message(server, info, RText(line).set_click_event(RAction.suggest_command, prefix.group()), prefix='')
 		else:
 			print_message(server, info, line, prefix='')
-	list_backup(server, info)
+	list_backup(server, info, size_display=False)
 	print_message(
 		server, info,
+		'§d【快捷操作】§r' + '\n' +
 		RText('>>> §a点我创建一个备份§r <<<')
 			.h('记得修改注释')
-			.c(RAction.suggest_command, f'{Prefix} make 大叔来了'),
+			.c(RAction.suggest_command, f'{Prefix} make 我是一个注释') + '\n' +
+		RText('>>> §c点我回档至最近的备份§r <<<')
+			.h('也就是回档至第一个槽位')
+			.c(RAction.suggest_command, f'{Prefix} back'),
 		prefix=''
 	)
 
@@ -447,7 +452,7 @@ def on_load(server, old):
 		restoring_backup = old.restoring_backup
 	if hasattr(old, 'sharing_backup') and type(old.sharing_backup) == type(sharing_backup):
 		sharing_backup = old.sharing_backup
-		
+
 
 def on_unload(server):
 	global abort_restore, plugin_unloaded
