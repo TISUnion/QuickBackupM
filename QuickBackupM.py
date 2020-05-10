@@ -32,7 +32,7 @@ ServerPath = './server'
 '''================ 可修改常量结束 ================'''
 
 HelpMessage = '''
------- MCDR Multi Quick Backup 20200505 ------
+------ MCDR Multi Quick Backup 20200510 ------
 一个支持多槽位的快速§a备份§r&§c回档§r插件
 §d【格式说明】§r
 §7{0}§r 显示帮助信息
@@ -168,19 +168,19 @@ def delete_backup(server, info, slot):
 	try:
 		shutil.rmtree(get_slot_folder(slot))
 	except Exception as e:
-		print_message(server, info, RText('§4删除失败§r，详细错误信息请查看服务端后台').set_hover_text(e))
+		print_message(server, info, RText('§4删除失败§r，详细错误信息请查看服务端后台').set_hover_text(e), tell=False)
 	else:
-		print_message(server, info, '§a删除完成§r')
+		print_message(server, info, '§a删除完成§r', tell=False)
 
 
 def create_backup(server, info, comment):
 	global creating_backup
 	acquired = creating_backup.acquire(blocking=False)
 	if not acquired:
-		print_message(server, info, '正在§a备份§r中，请不要重复输入')
+		print_message(server, info, '正在§a备份§r中，请不要重复输入', tell=False)
 		return
 	try:
-		print_message(server, info, '§a备份§r中...请稍等')
+		print_message(server, info, '§a备份§r中...请稍等', tell=False)
 		start_time = time.time()
 		touch_backup_folder()
 
@@ -202,7 +202,7 @@ def create_backup(server, info, comment):
 			if game_saved:
 				break
 			if plugin_unloaded:
-				server.reply(info, '插件重载，§a备份§r中断！')
+				server.reply(info, '插件重载，§a备份§r中断！', tell=False)
 				return
 		slot_path = get_slot_folder(1)
 
@@ -213,10 +213,10 @@ def create_backup(server, info, comment):
 		with open('{}/info.json'.format(slot_path), 'w') as f:
 			json.dump(slot_info, f, indent=4)
 		end_time = time.time()
-		print_message(server, info, '§a备份§r完成，耗时§6{}§r秒'.format(round(end_time - start_time, 1)))
-		print_message(server, info, format_slot_info(info_dict=slot_info))
+		print_message(server, info, '§a备份§r完成，耗时§6{}§r秒'.format(round(end_time - start_time, 1)), tell=False)
+		print_message(server, info, format_slot_info(info_dict=slot_info), tell=False)
 	except Exception as e:
-		print_message(server, info, '§a备份§r失败，错误代码{}'.format(e))
+		print_message(server, info, '§a备份§r失败，错误代码{}'.format(e), tell=False)
 	finally:
 		creating_backup.release()
 		if TurnOffAutoSave:
@@ -232,12 +232,13 @@ def restore_backup(server, info, slot):
 	global slot_selected, abort_restore
 	slot_selected = slot
 	abort_restore = False
-	print_message(server, info, '准备将存档恢复至槽位§6{}§r， {}'.format(slot, format_slot_info(info_dict=slot_info)))
+	print_message(server, info, '准备将存档恢复至槽位§6{}§r， {}'.format(slot, format_slot_info(info_dict=slot_info)), tell=False)
 	print_message(
 		server, info,
 		command_run('使用§7{0} confirm§r 确认§c回档§r'.format(Prefix), '点击确认', '{0} confirm'.format(Prefix))
 		+ ', '
 		+ command_run('§7{0} abort§r 取消'.format(Prefix), '点击取消', '{0} abort'.format(Prefix))
+		, tell=False
 	)
 
 
@@ -245,28 +246,28 @@ def confirm_restore(server, info):
 	global restoring_backup
 	acquired = restoring_backup.acquire(blocking=False)
 	if not acquired:
-		print_message(server, info, '正在准备§c回档§r中，请不要重复输入')
+		print_message(server, info, '正在准备§c回档§r中，请不要重复输入', tell=False)
 		return
 	try:
 		global slot_selected
 		if slot_selected is None:
-			print_message(server, info, '没有什么需要确认的')
+			print_message(server, info, '没有什么需要确认的', tell=False)
 			return
 		slot = slot_selected
 		slot_selected = None
 
-		print_message(server, info, '10秒后关闭服务器§c回档§r')
+		print_message(server, info, '10秒后关闭服务器§c回档§r', tell=False)
 		for countdown in range(1, 10):
 			print_message(server, info, command_run(
 				'还有{}秒，将§c回档§r为槽位§6{}§r，{}'.format(10 - countdown, slot, format_slot_info(slot_number=slot)),
 				'点击终止回档！',
 				'{} abort'.format(Prefix)
-			))
+			), tell=False)
 			for i in range(10):
 				time.sleep(0.1)
 				global abort_restore
 				if abort_restore:
-					print_message(server, info, '§c回档§r被中断！')
+					print_message(server, info, '§c回档§r被中断！', tell=False)
 					return
 
 		server.stop()
@@ -297,7 +298,7 @@ def trigger_abort(server, info):
 	global abort_restore, slot_selected
 	abort_restore = True
 	slot_selected = None
-	print_message(server, info, '终止操作！')
+	print_message(server, info, '终止操作！', tell=False)
 
 
 def list_backup(server, info, size_display=SizeDisplay):

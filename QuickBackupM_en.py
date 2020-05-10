@@ -32,7 +32,7 @@ ServerPath = './server'
 '''================ Modifiable constant ends ================'''
 
 HelpMessage = '''
------- MCDR Multi Quick Backup 20200505 ------
+------ MCDR Multi Quick Backup 20200510 ------
 A plugin that supports multi slots world §abackup§r and backup §crestore§r
 §d[Format]§r
 §7{0}§r Display help message
@@ -168,19 +168,19 @@ def delete_backup(server, info, slot):
 	try:
 		shutil.rmtree(get_slot_folder(slot))
 	except Exception as e:
-		print_message(server, info, RText('§Delete fail§r, check console for more detail').set_hover_text(e))
+		print_message(server, info, RText('§Delete fail§r, check console for more detail').set_hover_text(e), tell=False)
 	else:
-		print_message(server, info, '§aDelete success§r')
+		print_message(server, info, '§aDelete success§r', tell=False)
 
 
 def create_backup(server, info, comment):
 	global creating_backup
 	acquired = creating_backup.acquire(blocking=False)
 	if not acquired:
-		print_message(server, info, '§aBacking up§r, don''t spam')
+		print_message(server, info, '§aBacking up§r, don''t spam', tell=False)
 		return
 	try:
-		print_message(server, info, '§aBacking up§r, please wait')
+		print_message(server, info, '§aBacking up§r, please wait', tell=False)
 		start_time = time.time()
 		touch_backup_folder()
 
@@ -202,7 +202,7 @@ def create_backup(server, info, comment):
 			if game_saved:
 				break
 			if plugin_unloaded:
-				server.reply(info, 'Plugin unloaded, §aback up§r aborted!')
+				server.reply(info, 'Plugin unloaded, §aback up§r aborted!', tell=False)
 				return
 		slot_path = get_slot_folder(1)
 
@@ -213,10 +213,10 @@ def create_backup(server, info, comment):
 		with open('{}/info.json'.format(slot_path), 'w') as f:
 			json.dump(slot_info, f, indent=4)
 		end_time = time.time()
-		print_message(server, info, '§aBack up§r successfully, time cost §6{}§rs'.format(round(end_time - start_time, 1)))
-		print_message(server, info, format_slot_info(info_dict=slot_info))
+		print_message(server, info, '§aBack up§r successfully, time cost §6{}§rs'.format(round(end_time - start_time, 1)), tell=False)
+		print_message(server, info, format_slot_info(info_dict=slot_info), tell=False)
 	except Exception as e:
-		print_message(server, info, '§aBack up§r unsuccessfully, error code {}'.format(e))
+		print_message(server, info, '§aBack up§r unsuccessfully, error code {}'.format(e), tell=False)
 	finally:
 		creating_backup.release()
 		if TurnOffAutoSave:
@@ -232,12 +232,13 @@ def restore_backup(server, info, slot):
 	global slot_selected, abort_restore
 	slot_selected = slot
 	abort_restore = False
-	print_message(server, info, 'Gonna restore the world to slot §6{}§r, {}'.format(slot, format_slot_info(info_dict=slot_info)))
+	print_message(server, info, 'Gonna restore the world to slot §6{}§r, {}'.format(slot, format_slot_info(info_dict=slot_info)), tell=False)
 	print_message(
 		server, info,
 		command_run('Use §7{0} confirm§r to confirm §crestore§r'.format(Prefix), 'click to confirm', '{0} confirm'.format(Prefix))
 		+ ', '
 		+ command_run('§7{0} abort§r to abort'.format(Prefix), 'click to abort', '{0} abort'.format(Prefix))
+		, tell=False
 	)
 
 
@@ -245,28 +246,28 @@ def confirm_restore(server, info):
 	global restoring_backup
 	acquired = restoring_backup.acquire(blocking=False)
 	if not acquired:
-		print_message(server, info, '§cRestoring§r, don''t spam')
+		print_message(server, info, '§cRestoring§r, don''t spam', tell=False)
 		return
 	try:
 		global slot_selected
 		if slot_selected is None:
-			print_message(server, info, 'Nothing to confirm')
+			print_message(server, info, 'Nothing to confirm', tell=False)
 			return
 		slot = slot_selected
 		slot_selected = None
 
-		print_message(server, info, '§cRestore§r after 10 second')
+		print_message(server, info, '§cRestore§r after 10 second', tell=False)
 		for countdown in range(1, 10):
 			print_message(server, info, command_run(
 				'{} second later the world will be §crestored§r to slot §6{}§r, {}'.format(10 - countdown, slot, format_slot_info(slot_number=slot)),
 				'click to abort restore!',
 				'{} abort'.format(Prefix)
-			))
+			), tell=False)
 			for i in range(10):
 				time.sleep(0.1)
 				global abort_restore
 				if abort_restore:
-					print_message(server, info, '§cRestore§r aborted!')
+					print_message(server, info, '§cRestore§r aborted!', tell=False)
 					return
 
 		server.stop()
@@ -297,7 +298,7 @@ def trigger_abort(server, info):
 	global abort_restore, slot_selected
 	abort_restore = True
 	slot_selected = None
-	print_message(server, info, 'Operation terminated!')
+	print_message(server, info, 'Operation terminated!', tell=False)
 
 
 def list_backup(server, info, size_display=SizeDisplay):
