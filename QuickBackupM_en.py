@@ -371,7 +371,7 @@ def on_info(server, info):
 	# MCDR permission check
 	global MinimumPermissionLevel
 	if cmd_len >= 2 and command[1] in MinimumPermissionLevel.keys():
-		if server.get_permission_level(info) < MinimumPermissionLevel[command[0]]:
+		if server.get_permission_level(info) < MinimumPermissionLevel[command[1]]:
 			print_message(server, info, '§cPermission denied§r')
 			return
 
