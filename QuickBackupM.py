@@ -83,12 +83,13 @@ def copy_worlds(src, dst):
 	def filter_ignore(path, files):
 		return [file for file in files if file == 'session.lock' and IgnoreSessionLock]
 	for world in WorldNames:
-		shutil.copytree('{}/{}'.format(src, world), '{}/{}'.format(dst, world), ignore=filter_ignore)
+		shutil.copytree('{}/{}'.format(src, world),
+                        os.path.realpath('{}/{}'.format(dst, world)), ignore=filter_ignore)
 
 
 def remove_worlds(folder):
 	for world in WorldNames:
-		shutil.rmtree('{}/{}'.format(folder, world))
+		shutil.rmtree(os.path.realpath('{}/{}'.format(folder, world)))
 
 
 def get_slot_folder(slot):
