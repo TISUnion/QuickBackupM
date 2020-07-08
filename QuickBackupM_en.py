@@ -93,7 +93,7 @@ def remove_worlds(folder):
 
 
 def get_slot_folder(slot):
-	return os.path.join(BackupPath, slot)
+	return os.path.join(BackupPath, f"slot{slot}")
 
 
 def get_slot_info(slot):
