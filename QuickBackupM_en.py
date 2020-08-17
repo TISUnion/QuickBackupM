@@ -196,7 +196,7 @@ def create_backup(server, info, comment):
 		game_saved = False
 		if TurnOffAutoSave:
 			server.execute('save-off')
-		server.execute('save-all')
+		server.execute('save-all flush')
 		while True:
 			time.sleep(0.01)
 			if game_saved:
