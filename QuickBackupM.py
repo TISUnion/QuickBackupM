@@ -83,21 +83,22 @@ def copy_worlds(src, dst):
 	def filter_ignore(path, files):
 		return [file for file in files if file == 'session.lock' and IgnoreSessionLock]
 	for world in WorldNames:
-		shutil.copytree('{}/{}'.format(src, world), '{}/{}'.format(dst, world), ignore=filter_ignore)
+		shutil.copytree(os.path.join(src, world),
+				os.path.realpath(os.path.join(dst, world)), ignore=filter_ignore)
 
 
 def remove_worlds(folder):
 	for world in WorldNames:
-		shutil.rmtree('{}/{}'.format(folder, world))
+		shutil.rmtree(os.path.realpath(os.path.join(folder, world)))
 
 
 def get_slot_folder(slot):
-	return '{}/slot{}'.format(BackupPath, slot)
+	return os.path.join(BackupPath, f"slot{slot}")
 
 
 def get_slot_info(slot):
 	try:
-		with open('{}/info.json'.format(get_slot_folder(slot))) as f:
+		with open(os.path.join(get_slot_folder(slot), 'info.json')) as f:
 			info = json.load(f, encoding='utf8')
 		for key in info.keys():
 			value = info[key]
@@ -225,7 +226,7 @@ def create_backup(server, info, comment):
 		slot_info = {'time': format_time()}
 		if comment is not None:
 			slot_info['comment'] = comment
-		with open('{}/info.json'.format(slot_path), 'w') as f:
+		with open(os.path.join(slot_path, 'info.json'), 'w') as f:
 			json.dump(slot_info, f, indent=4)
 		end_time = time.time()
 		print_message(server, info, '§a备份§r完成，耗时§6{}§r秒'.format(round(end_time - start_time, 1)), tell=False)
@@ -294,7 +295,7 @@ def confirm_restore(server, info):
 		if os.path.exists(overwrite_backup_path):
 			shutil.rmtree(overwrite_backup_path)
 		copy_worlds(ServerPath, overwrite_backup_path)
-		with open('{}/info.txt'.format(overwrite_backup_path), 'w') as f:
+		with open(os.path.join(overwrite_backup_path, 'info.txt'), 'w') as f:
 			f.write('Overwrite time: {}\n'.format(format_time()))
 			f.write('Confirmed by: {}'.format(info.player if info.is_player else '$Console$'))
 
