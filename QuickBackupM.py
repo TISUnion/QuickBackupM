@@ -32,7 +32,7 @@ ServerPath = './server'
 '''================ 可修改常量结束 ================'''
 
 HelpMessage = '''
------- MCDR Multi Quick Backup 20200510 ------
+------ MCDR Multi Quick Backup 20200817 ------
 一个支持多槽位的快速§a备份§r&§c回档§r插件
 §d【格式说明】§r
 §7{0}§r 显示帮助信息
@@ -168,9 +168,9 @@ def delete_backup(server, info, slot):
 	try:
 		shutil.rmtree(get_slot_folder(slot))
 	except Exception as e:
-		print_message(server, info, RText('§4删除失败§r，详细错误信息请查看服务端后台').set_hover_text(e), tell=False)
+		print_message(server, info, '§4删除槽位§6{}§r失败§r，错误代码：{}'.format(slot, e), tell=False)
 	else:
-		print_message(server, info, '§a删除完成§r', tell=False)
+		print_message(server, info, '§a删除槽位§6{}§r完成§r'.format(slot), tell=False)
 
 
 def create_backup(server, info, comment):
@@ -184,12 +184,27 @@ def create_backup(server, info, comment):
 		start_time = time.time()
 		touch_backup_folder()
 
+		# previous plain logic
+		'''
 		# remove the last backup
 		shutil.rmtree(get_slot_folder(SlotCount))
 
 		# move slot i-1 to slot i
 		for i in range(SlotCount, 1, -1):
 			os.rename(get_slot_folder(i - 1), get_slot_folder(i))
+		'''
+
+		# make empty space for slot <slot>
+		def move_backwards(slot):
+			if get_slot_info(slot) is None or slot == SlotCount:
+				folder = get_slot_folder(slot)
+				if os.path.isdir(folder):
+					shutil.rmtree(folder)
+				return
+			move_backwards(slot + 1)
+			os.rename(get_slot_folder(slot), get_slot_folder(slot + 1))
+
+		move_backwards(1)
 
 		# start backup
 		global game_saved, plugin_unloaded
@@ -306,26 +321,36 @@ def list_backup(server, info, size_display=SizeDisplay):
 		size = 0
 		for root, dirs, files in os.walk(dir):
 			size += sum([os.path.getsize(os.path.join(root, name)) for name in files])
+		return size
+
+	def format_dir_size(size):
 		if size < 2 ** 30:
 			return f'{round(size / 2 ** 20, 2)} MB'
 		else:
 			return f'{round(size / 2 ** 30, 2)} GB'
 
 	print_message(server, info, '§d【槽位信息】§r', prefix='')
+	backup_size = 0
 	for i in range(SlotCount):
-		j = i + 1
-		print_message(
-			server, info,
-			RTextList(
-				f'[槽位§6{j}§r] ',
-				RText('[▷] ', color=RColor.green).h(f'点击回档至槽位§6{j}§r').c(RAction.run_command, f'{Prefix} back {j}'),
-				RText('[×] ', color=RColor.red).h(f'点击删除槽位§6{j}§r').c(RAction.suggest_command, f'{Prefix} del {j}'),
-				format_slot_info(slot_number=j)
-			),
-			prefix=''
-		)
+		slot = i + 1
+		slot_info = format_slot_info(slot_number=slot)
+		if size_display:
+			dir_size = get_dir_size(get_slot_folder(slot))
+		else:
+			dir_size = 0
+		backup_size += dir_size
+		text = RTextList('[槽位§6{}§r] '.format(slot))
+		if slot_info is not None:
+			text += RTextList(
+				RText('[▷] ', color=RColor.green).h(f'点击回档至槽位§6{slot}§r').c(RAction.run_command, f'{Prefix} back {slot}'),
+				RText('[×] ', color=RColor.red).h(f'点击删除槽位§6{slot}§r').c(RAction.suggest_command, f'{Prefix} del {slot}')
+			)
+			if size_display:
+				text += '§2{}§r '.format(format_dir_size(dir_size))
+		text += slot_info
+		print_message(server, info, text, prefix='')
 	if size_display:
-		print_message(server, info, '备份总占用空间: §a{}§r'.format(get_dir_size(BackupPath)), prefix='')
+		print_message(server, info, '备份总占用空间: §a{}§r'.format(format_dir_size(backup_size)), prefix='')
 
 
 def print_help_message(server, info):
@@ -397,8 +422,8 @@ def on_info(server, info):
 		list_backup(server, info)
 
 	# !!qb delete
-	elif cmd_len in [2, 3] and command[1] == 'del':
-		delete_backup(server, info, command[2] if cmd_len == 3 else '1')
+	elif cmd_len == 3 and command[1] == 'del':
+		delete_backup(server, info, command[2])
 
 	else:
 		print_message(server, info, command_run(
