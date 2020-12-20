@@ -5,6 +5,8 @@
 
 A plugin for multi slot back up / restore your world
 
+The `master` branch is the Chinese version and the `english` branch is the English version
+
 Needs `0.8.2-alpha`+ [MCDReforged](https://github.com/Fallen-Breath/MCDReforged)
 
 ![snapshot](https://raw.githubusercontent.com/TISUnion/QuickBackupM/master/snapshot_en.png)
@@ -47,82 +49,117 @@ mcd_root/
 
 `!!qb list` Display slot information
 
+`!!qb reload` Reload the config file
+
 When `<slot>` is not set the default value is `1`
 
-In MCDR `!!qb back` and `!!qb del` needs permission level `helper`
+## Config file explaination
 
-## Constant explain
+The config file is `config/QuickBackupM.json`. It will automatically generate at the first run
 
-Custom your QuickBackupM 
+### slots
 
-### SizeDisplay
+Default：
 
-Default: `SizeDisplay = True`
+```
+"slots": [
+    {
+        "delete_protection": 0
+    },
+    {
+        "delete_protection": 0
+    },
+    {
+        "delete_protection": 0
+    },
+    {
+        "delete_protection": 10800
+    },
+    {
+        "delete_protection": 259200
+    }
+]
+```
+
+The amount of seconds for each slots to be protected from overwriting. Set it to `0` to disable protection
+
+The size of this list also determines the amount of backup slot
+
+With the default value, there are 5 slots in total, among which the first 3 slots have no protection, the 4th slot will be protected for 3 hours (3 * 60 * 60 seconds), and the 5th slot will be protected for 3 days
+
+Please ensure that the protection time does not decrease with the slot number, that is, the protection time of the nth slot cannot be greater than the protection time of the n + 1th slot, otherwise there may be undefined behavior
+
+Backups created by older QuickBackupM plugin don't support this feature
+
+### size_display
+
+Default: `true`
 
 Whether the occupied space is displayed when viewing the backup list
 
-### SlotCount
+### turn_off_auto_save
 
-Default: `SlotCount = 5`
-
-The number of slot
-
-### Prefix
-
-Default: `Prefix = '!!qb'`
-
-The command prefix
-
-### BackupPath
-
-Default: `BackupPath = './qb_multi'`
-
-The backup root path
-
-### TurnOffAutoSave
-
-Default: `TurnOffAutoSave = True`
+Default: `true`
 
 If turn off auto save when making backup or not
 
 ### IgnoreSessionLock
 
-Default: `IgnoreSessionLock = True`
+Default: `true`
 
 If ignore file `session.lock` during backup, which can solve the back up failure problem caused by `session.lock` being occupied by the server
+
+### backup_path
+
+Default: `./qb_multi`
+
+The backup root path
+
+### server_path
+
+Default: `./server`
+
+The folder path of the server. `./server` is the default server path for MCDR
+
+### overwrite_backup_folder
+
+Default: `overwrite`
+
+The backup position of the overwritten world. With default config file the path will be `./qb_multi/overwrite`
 
 ### WorldNames
 
 Default:
 
 ```
-WorldNames = [
-    'world',
+"world_names": [
+    "world"
 ]
 ```
 
 A list of world folder that you want to backup. For vanilla there should be only 1 folder. For not vanilla server like bukkit or paper, there are 3 folders. You can write like:
 
 ```
-WorldNames = [
-    'world',
-    'world_nether',
-    'world_the_end',
+"world_names": [
+    "world",
+    "world_nether",
+    "world_the_end"
 ]
 ```
 
-### MinimumPermissionLevel
+### minimum_permission_level
 
 Default:
 
 ```
-MinimumPermissionLevel = {
-	'make': 1,
-	'back': 2,
-	'confirm': 1,
-	'abort': 1,
-	'share': 2,
-	'list': 0,
+"minimum_permission_level": {
+	"make": 1,
+	"back": 2,
+	"del": 2,
+	"confirm": 1,
+	"abort": 1,
+	"reload": 2,
+	"list": 0,
 }
 ```
 
