@@ -56,8 +56,8 @@ slot_selected = None
 abort_restore = False
 game_saved = False
 plugin_unloaded = False
-creating_backup = Lock()
-restoring_backup = Lock()
+creating_backup_lock = Lock()
+restoring_backup_lock = Lock()
 '''
 mcdr_root/
 	server/
@@ -188,8 +188,8 @@ def slot_check(server, info, slot):
 
 
 def delete_backup(server, info, slot):
-	global creating_backup, restoring_backup
-	if creating_backup.locked() or restoring_backup.locked():
+	global creating_backup_lock, restoring_backup_lock
+	if creating_backup_lock.locked() or restoring_backup_lock.locked():
 		return
 	if slot_check(server, info, slot) is None:
 		return
@@ -244,8 +244,11 @@ def clean_up_slot_1():
 
 
 def create_backup(server, info, comment):
-	global creating_backup
-	acquired = creating_backup.acquire(blocking=False)
+	global restoring_backup_lock, creating_backup_lock
+	if restoring_backup_lock.locked():
+		print_message(server, info, '正在§c回档§r中，请不要尝试备份', tell=False)
+		return
+	acquired = creating_backup_lock.acquire(blocking=False)
 	if not acquired:
 		print_message(server, info, '正在§a备份§r中，请不要重复输入', tell=False)
 		return
@@ -293,7 +296,7 @@ def create_backup(server, info, comment):
 	except Exception as e:
 		print_message(server, info, '§a备份§r失败，错误代码{}'.format(e), tell=False)
 	finally:
-		creating_backup.release()
+		creating_backup_lock.release()
 		if config['turn_off_auto_save']:
 			server.execute('save-on')
 
@@ -318,8 +321,11 @@ def restore_backup(server, info, slot):
 
 
 def confirm_restore(server, info):
-	global restoring_backup
-	acquired = restoring_backup.acquire(blocking=False)
+	global restoring_backup_lock, creating_backup_lock
+	if creating_backup_lock.locked():
+		print_message(server, info, '正在§a备份§r中，请不要尝试回档', tell=False)
+		return
+	acquired = restoring_backup_lock.acquire(blocking=False)
 	if not acquired:
 		print_message(server, info, '正在准备§c回档§r中，请不要重复输入', tell=False)
 		return
@@ -366,7 +372,7 @@ def confirm_restore(server, info):
 
 		server.start()
 	finally:
-		restoring_backup.release()
+		restoring_backup_lock.release()
 
 
 def trigger_abort(server, info):
@@ -532,11 +538,11 @@ def load_config(server, info=None):
 
 def on_load(server, old):
 	server.add_help_message(Prefix, command_run('§a备份§r/§c回档§r，§6{}§r槽位'.format(len(config['slots'])), '点击查看帮助信息', Prefix))
-	global creating_backup, restoring_backup
-	if hasattr(old, 'creating_backup') and type(old.creating_backup) == type(creating_backup):
-		creating_backup = old.creating_backup
-	if hasattr(old, 'restoring_backup') and type(old.restoring_backup) == type(restoring_backup):
-		restoring_backup = old.restoring_backup
+	global creating_backup_lock, restoring_backup_lock
+	if hasattr(old, 'creating_backup_lock') and type(old.creating_backup_lock) == type(creating_backup_lock):
+		creating_backup_lock = old.creating_backup_lock
+	if hasattr(old, 'restoring_backup_lock') and type(old.restoring_backup_lock) == type(restoring_backup_lock):
+		restoring_backup_lock = old.restoring_backup_lock
 
 	load_config(server)
 
