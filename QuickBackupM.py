@@ -18,6 +18,8 @@ config = {
 	'world_names': [
 		'world',
 	],
+	'share_path': '/home/shared',
+	'share_address': '192.168.0.0',
 	# 0:guest 1:user 2:helper 3:admin
 	'minimum_permission_level': {
 		'make': 1,
@@ -395,18 +397,22 @@ def share_backup(server, info, slot):
 
 		dir_name = slot_info['time'].replace(' ', '_')
 		print_message(server, info, '传输中...请稍等')
-		if SharePath == '':  # wtf r u doing
+		share_path = str(config['share_path'])
+		if share_path == '':  # wtf u r doing
 			print_message(server, info, '[ERROR] WRONG SHARE PATH WTF')
+			server.logger.warning('WRONG SHARE PATH WTF')
 			return
 		else:
-			os.system('ssh root@{} "rm -rf {}/*" > nul'.format(ShareAddress, SharePath))
-		for world in WorldNames:
-			os.system('scp -r {}/{} root@{}:{}/{} > nul'.format(get_slot_folder(slot), world, ShareAddress, SharePath,
-																dir_name))
+			os.system('ssh root@{} "rm -rf {}/*" > nul'.format(config['share_address'], share_path))
+		for world in config['world_names']:
+			os.system('scp -r {} root@{}:{} > nul'.format(
+				os.path.join(get_slot_folder(slot), world),
+				config['share_address'],
+				os.path.join(share_path, dir_name)
+			))
 		print_message(server, info, '已经成功分享到内服云盘')
 	finally:
 		sharing_backup.release()
-	print_message(server, info, '终止操作！', tell=False)
 
 
 def list_backup(server, info, size_display=config['size_display']):
