@@ -5,7 +5,9 @@
 
 A plugin for multi slot back up / restore your world
 
-Compatible with [MCDaemon](https://github.com/kafuuchino-desu/MCDaemon) and [MCDReforged](https://github.com/Fallen-Breath/MCDReforged)
+Needs `0.8.2-alpha`+ [MCDReforged](https://github.com/Fallen-Breath/MCDReforged)
+
+![snapshot](https://raw.githubusercontent.com/TISUnion/QuickBackupM/master/snapshot_en.png)
 
 The backup worlds will be store in folder qb_multi like below:
 ```
@@ -53,6 +55,12 @@ In MCDR `!!qb back` and `!!qb del` needs permission level `helper`
 
 Custom your QuickBackupM 
 
+### SizeDisplay
+
+Default: `SizeDisplay = True`
+
+Whether the occupied space is displayed when viewing the backup list
+
 ### SlotCount
 
 Default: `SlotCount = 5`
@@ -76,6 +84,12 @@ The backup root path
 Default: `TurnOffAutoSave = True`
 
 If turn off auto save when making backup or not
+
+### IgnoreSessionLock
+
+Default: `IgnoreSessionLock = True`
+
+If ignore file `session.lock` during backup, which can solve the back up failure problem caused by `session.lock` being occupied by the server
 
 ### WorldNames
 

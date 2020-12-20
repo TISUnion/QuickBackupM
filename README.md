@@ -5,7 +5,9 @@
 
 一个支持多槽位的快速备份＆回档插件
 
-兼容 [MCDaemon](https://github.com/kafuuchino-desu/MCDaemon) 以及 [MCDReforged](https://github.com/Fallen-Breath/MCDReforged)
+需要 `0.8.2-alpha` 以上的 [MCDReforged](https://github.com/Fallen-Breath/MCDReforged)
+
+![snapshot](https://raw.githubusercontent.com/TISUnion/QuickBackupM/master/snapshot.png)
 
 备份的存档将会存放至 qb_multi 文件夹中，文件目录格式如下：
 ```
@@ -53,6 +55,12 @@ mcd_root/
 
 调整这些常量的数值也就是在配置 QuickBackupM 插件
 
+### SizeDisplay
+
+默认值: `SizeDisplay = True`
+
+查看备份列表是否显示占用空间
+
 ### SlotCount
 
 默认值: `SlotCount = 5`
@@ -76,6 +84,12 @@ mcd_root/
 默认值: `TurnOffAutoSave = True`
 
 是否在备份时临时关闭自动保存
+
+### IgnoreSessionLock
+
+默认值: `IgnoreSessionLock = True`
+
+是否在备份时忽略文件 `session.lock`。这可以解决 `session.lock` 被服务端占用导致备份失败的问题
 
 ### WorldNames
 
