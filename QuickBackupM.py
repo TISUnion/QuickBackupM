@@ -129,13 +129,13 @@ def format_protection_time(time_length):
 	:rtype: str
 	"""
 	if time_length < 60:
-		return '{}秒'.format(time_length)
+		return '{} seconds'.format(time_length)
 	elif time_length < 60 * 60:
-		return '{}分钟'.format(round(time_length / 60, 2))
+		return '{} minutes'.format(round(time_length / 60, 2))
 	elif time_length < 24 * 60 * 60:
-		return '{}小时'.format(round(time_length / 60 / 60, 2))
+		return '{} hours'.format(round(time_length / 60 / 60, 2))
 	else:
-		return '{}天'.format(round(time_length / 60 / 60 / 24, 2))
+		return '{} days'.format(round(time_length / 60 / 60 / 24, 2))
 
 
 def format_slot_info(info_dict=None, slot_number=None):
@@ -509,7 +509,7 @@ def load_config(server, info=None):
 			config[key] = js[key]
 		server.logger.info('Config file loaded')
 		if info:
-			print_message(server, info, '配置文件加载成功', tell=True)
+			print_message(server, info, 'Config file loaded', tell=True)
 
 		# delete_protection check
 		last = 0
@@ -524,7 +524,7 @@ def load_config(server, info=None):
 	except:
 		server.logger.info('Fail to read config file, using default value')
 		if info:
-			print_message(server, info, '配置文件加载失败，使用默认配置', tell=True)
+			print_message(server, info, 'Fail to read config file, using default value', tell=True)
 		config = default_config
 		with open(CONFIG_FILE, 'w') as file:
 			json.dump(config, file, indent=4)
