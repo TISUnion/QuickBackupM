@@ -5,6 +5,8 @@
 
 一个支持多槽位的快速备份＆回档插件
 
+`master` 分支为中文版，`english` 分支为英文版
+
 需要 `0.8.2-alpha` 以上的 [MCDReforged](https://github.com/Fallen-Breath/MCDReforged)
 
 ![snapshot](https://raw.githubusercontent.com/TISUnion/QuickBackupM/master/snapshot.png)
@@ -47,57 +49,91 @@ mcd_root/
 
 `!!qb list` 显示各槽位的存档信息
 
+`!!qb reload` 重新加载配置文件
+
 当 `<slot>` 未被指定时默认选择槽位 `1`
 
-在 MCDR 环境下，默认配置下 `!!qb back` 以及 `!!qb share` 需要权限等级 `helper`
+## 配置文件选项说明
 
-## 一些常量说明
+配置文件为 `config/QuickBackupM.json`。它会在第一次运行时自动生成
 
-调整这些常量的数值也就是在配置 QuickBackupM 插件
+### slots
 
-### SizeDisplay
+默认值：
 
-默认值: `SizeDisplay = True`
+```
+"slots": [
+    {
+        "delete_protection": 0
+    },
+    {
+        "delete_protection": 0
+    },
+    {
+        "delete_protection": 0
+    },
+    {
+        "delete_protection": 10800
+    },
+    {
+        "delete_protection": 259200
+    }
+]
+```
+
+每个槽位被保护不被覆盖的秒数。设置为 `0` 则表示不保护
+
+该列表的长度也决定了槽位的数量
+
+在默认值中，一共有 5 个槽位，其中前三个槽位未设置保护时间，第四个槽位会被保护三个小时（3 * 60 * 60 秒），第五个槽位会被保护三天 
+
+请保证保护时间是随着槽位序号单调不下降的，也就是第 n 给个槽位的保护时间不能大于第 n + 1 个槽位的保护时间，否则可能有未定义的行为
+
+由旧的 QuickBackupM 插件创建的备份不支持这个特性
+
+### size_display
+
+默认值: `true`
 
 查看备份列表是否显示占用空间
 
-### SlotCount
+### turn_off_auto_save
 
-默认值: `SlotCount = 5`
-
-存档槽位的数量
-
-### Prefix
-
-默认值: `Prefix = '!!qb'`
-
-触发指令的前缀
-
-### BackupPath
-
-默认值: `BackupPath = './qb_multi'`
-
-备份储存的路径
-
-### TurnOffAutoSave
-
-默认值: `TurnOffAutoSave = True`
+默认值: `true`
 
 是否在备份时临时关闭自动保存
 
-### IgnoreSessionLock
+### ignore_session_lock
 
-默认值: `IgnoreSessionLock = True`
+默认值: `true`
 
 是否在备份时忽略文件 `session.lock`。这可以解决 `session.lock` 被服务端占用导致备份失败的问题
 
-### WorldNames
+### backup_path
+
+默认值: `./qb_multi`
+
+备份储存的路径
+
+### server_path
+
+默认值：`./server`
+
+服务端文件夹的路径。`./server` 即为 MCDR 的默认服务端文件夹路径
+
+### overwrite_backup_folder
+
+默认值: `overwrite`
+
+被覆盖的存档的备份位置，在配置文件均为默认值的情况下路径为 `./qb_multi/overwrite`
+
+### world_names
 
 默认值:
 
 ```
-WorldNames = [
-    'world',
+"world_names": [
+    "world"
 ]
 ```
 
@@ -105,25 +141,26 @@ WorldNames = [
 
 对于非原版服务端如水桶、水龙头服务端，会有三个世界文件夹，此时可填写：
 ```
-WorldNames = [
-    'world',
-    'world_nether',
-    'world_the_end',
+"world_names": [
+    "world",
+    "world_nether",
+    "world_the_end"
 ]
 ```
 
-### MinimumPermissionLevel
+### minimum_permission_level
 
 默认值:
 
 ```
-MinimumPermissionLevel = {
-	'make': 1,
-	'back': 2,
-	'confirm': 1,
-	'abort': 1,
-	'share': 2,
-	'list': 0,
+"minimum_permission_level": {
+	"make": 1,
+	"back": 2,
+	"del": 2,
+	"confirm": 1,
+	"abort": 1,
+	"reload": 2,
+	"list": 0,
 }
 ```
 

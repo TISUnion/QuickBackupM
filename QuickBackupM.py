@@ -4,35 +4,43 @@ import re
 import shutil
 import time
 from threading import Lock
+
 from utils.rtext import *
 
-
-'''================ 可修改常量开始 ================'''
-SizeDisplay = True
-SlotCount = 5
-Prefix = '!!qb'
-BackupPath = './qb_multi'
-TurnOffAutoSave = True
-IgnoreSessionLock = True
-WorldNames = [
-	'world',
-]
-# 0:guest 1:user 2:helper 3:admin
-MinimumPermissionLevel = {
-	'make': 1,
-	'back': 2,
-	'confirm': 1,
-	'abort': 1,
-	'share': 2,
-	'list': 0,
-	'del': 2,
+# 默认配置文件
+config = {
+	'size_display': True,
+	'turn_off_auto_save': True,
+	'ignore_session_lock': True,
+	'backup_path': './qb_multi',
+	'server_path': './server',
+	'overwrite_backup_folder': 'overwrite',
+	'world_names': [
+		'world',
+	],
+	# 0:guest 1:user 2:helper 3:admin
+	'minimum_permission_level': {
+		'make': 1,
+		'back': 2,
+		'del': 2,
+		'confirm': 1,
+		'abort': 1,
+		'reload': 2,
+		'list': 0,
+	},
+	'slots': [
+		{'delete_protection': 0},  # 无保护
+		{'delete_protection': 0},  # 无保护
+		{'delete_protection': 0},  # 无保护
+		{'delete_protection': 3 * 60 * 60},  # 三小时
+		{'delete_protection': 3 * 24 * 60 * 60},  # 三天
+	]
 }
-OverwriteBackupFolder = 'overwrite'
-ServerPath = './server'
-'''================ 可修改常量结束 ================'''
-
+default_config = config.copy()
+Prefix = '!!qb'
+CONFIG_FILE = os.path.join('config', 'QuickBackupM.json')
 HelpMessage = '''
------- MCDR Multi Quick Backup 20200817 ------
+------ MCDR Multi Quick Backup 20201220 ------
 一个支持多槽位的快速§a备份§r&§c回档§r插件
 §d【格式说明】§r
 §7{0}§r 显示帮助信息
@@ -81,25 +89,30 @@ def command_run(message, text, command):
 
 def copy_worlds(src, dst):
 	def filter_ignore(path, files):
-		return [file for file in files if file == 'session.lock' and IgnoreSessionLock]
-	for world in WorldNames:
+		return [file for file in files if file == 'session.lock' and config['ignore_session_lock']]
+	for world in config['world_names']:
 		shutil.copytree(os.path.join(src, world),
 				os.path.realpath(os.path.join(dst, world)), ignore=filter_ignore)
 
 
 def remove_worlds(folder):
-	for world in WorldNames:
+	for world in config['world_names']:
 		shutil.rmtree(os.path.realpath(os.path.join(folder, world)))
 
 
 def get_slot_folder(slot):
-	return os.path.join(BackupPath, f"slot{slot}")
+	return os.path.join(config['backup_path'], f"slot{slot}")
 
 
 def get_slot_info(slot):
+	"""
+	:param int slot: the index of the slot
+	:return: the slot info
+	:rtype: dict or None
+	"""
 	try:
 		with open(os.path.join(get_slot_folder(slot), 'info.json')) as f:
-			info = json.load(f, encoding='utf8')
+			info = json.load(f)
 		for key in info.keys():
 			value = info[key]
 	except:
@@ -109,6 +122,20 @@ def get_slot_info(slot):
 
 def format_time():
 	return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+
+
+def format_protection_time(time_length):
+	"""
+	:rtype: str
+	"""
+	if time_length < 60:
+		return '{}秒'.format(time_length)
+	elif time_length < 60 * 60:
+		return '{}分钟'.format(round(time_length / 60, 2))
+	elif time_length < 24 * 60 * 60:
+		return '{}小时'.format(round(time_length / 60 / 60, 2))
+	else:
+		return '{}天'.format(round(time_length / 60 / 60 / 24, 2))
 
 
 def format_slot_info(info_dict=None, slot_number=None):
@@ -130,27 +157,27 @@ def touch_backup_folder():
 		if not os.path.exists(path):
 			os.mkdir(path)
 
-	mkdir(BackupPath)
-	for i in range(SlotCount):
+	mkdir(config['backup_path'])
+	for i in range(len(config['slots'])):
 		mkdir(get_slot_folder(i + 1))
 
 
-def slot_number_formater(slot):
+def slot_number_formatter(slot):
 	flag_fail = False
 	if type(slot) is not int:
 		try:
 			slot = int(slot)
 		except ValueError:
 			flag_fail = True
-	if flag_fail or not 1 <= slot <= SlotCount:
+	if flag_fail or not 1 <= slot <= len(config['slots']):
 		return None
 	return slot
 
 
 def slot_check(server, info, slot):
-	slot = slot_number_formater(slot)
+	slot = slot_number_formatter(slot)
 	if slot is None:
-		print_message(server, info, '槽位输入错误，应输入一个位于[{}, {}]的数字'.format(1, SlotCount))
+		print_message(server, info, '槽位输入错误，应输入一个位于[{}, {}]的数字'.format(1, len(config['slots'])))
 		return None
 
 	slot_info = get_slot_info(slot)
@@ -174,6 +201,48 @@ def delete_backup(server, info, slot):
 		print_message(server, info, '§a删除槽位§6{}§r完成§r'.format(slot), tell=False)
 
 
+def clean_up_slot_1():
+	"""
+	try to cleanup slot 1 for backup
+	:rtype: bool
+	"""
+	slots = []
+	empty_slot_idx = None
+	target_slot_idx = None
+	max_available_idx = None
+	for i in range(len(config['slots'])):
+		slot_idx = i + 1
+		slot = get_slot_info(slot_idx)
+		slots.append(slot)
+		if slot is None:
+			if empty_slot_idx is None:
+				empty_slot_idx = slot_idx
+		else:
+			time_stamp = slot.get('time_stamp', None)
+			if time_stamp is not None:
+				slot_config_data = config['slots'][slot_idx - 1]  # type: dict
+				if time.time() - time_stamp > slot_config_data['delete_protection']:
+					max_available_idx = slot_idx
+			else:
+				# old format, treat it as available
+				max_available_idx = slot_idx
+
+	if empty_slot_idx is not None:
+		target_slot_idx = empty_slot_idx
+	else:
+		target_slot_idx = max_available_idx
+
+	if target_slot_idx is not None:
+		folder = get_slot_folder(target_slot_idx)
+		if os.path.isdir(folder):
+			shutil.rmtree(folder)
+		for i in reversed(range(1, target_slot_idx)):  # n-1, n-2, ..., 1
+			os.rename(get_slot_folder(i), get_slot_folder(i + 1))
+		return True
+	else:
+		return False
+
+
 def create_backup(server, info, comment):
 	global creating_backup
 	acquired = creating_backup.acquire(blocking=False)
@@ -185,32 +254,10 @@ def create_backup(server, info, comment):
 		start_time = time.time()
 		touch_backup_folder()
 
-		# previous plain logic
-		'''
-		# remove the last backup
-		shutil.rmtree(get_slot_folder(SlotCount))
-
-		# move slot i-1 to slot i
-		for i in range(SlotCount, 1, -1):
-			os.rename(get_slot_folder(i - 1), get_slot_folder(i))
-		'''
-
-		# make empty space for slot <slot>
-		def move_backwards(slot):
-			if get_slot_info(slot) is None or slot == SlotCount:
-				folder = get_slot_folder(slot)
-				if os.path.isdir(folder):
-					shutil.rmtree(folder)
-				return
-			move_backwards(slot + 1)
-			os.rename(get_slot_folder(slot), get_slot_folder(slot + 1))
-
-		move_backwards(1)
-
 		# start backup
 		global game_saved, plugin_unloaded
 		game_saved = False
-		if TurnOffAutoSave:
+		if config['turn_off_auto_save']:
 			server.execute('save-off')
 		server.execute('save-all flush')
 		while True:
@@ -218,16 +265,28 @@ def create_backup(server, info, comment):
 			if game_saved:
 				break
 			if plugin_unloaded:
-				server.reply(info, '插件重载，§a备份§r中断！', tell=False)
+				print_message(server, info, '插件重载，§a备份§r中断！', tell=False)
 				return
+
+		if not clean_up_slot_1():
+			print_message(server, info, '未找到可用槽位，§a备份§r中断！', tell=False)
+			return
+
 		slot_path = get_slot_folder(1)
 
-		copy_worlds(ServerPath, slot_path)
-		slot_info = {'time': format_time()}
+		# copy worlds to backup slot
+		copy_worlds(config['server_path'], slot_path)
+		# create info.json
+		slot_info = {
+			'time': format_time(),
+			'time_stamp': time.time()
+		}
 		if comment is not None:
 			slot_info['comment'] = comment
 		with open(os.path.join(slot_path, 'info.json'), 'w') as f:
 			json.dump(slot_info, f, indent=4)
+
+		# done
 		end_time = time.time()
 		print_message(server, info, '§a备份§r完成，耗时§6{}§r秒'.format(round(end_time - start_time, 1)), tell=False)
 		print_message(server, info, format_slot_info(info_dict=slot_info), tell=False)
@@ -235,7 +294,7 @@ def create_backup(server, info, comment):
 		print_message(server, info, '§a备份§r失败，错误代码{}'.format(e), tell=False)
 	finally:
 		creating_backup.release()
-		if TurnOffAutoSave:
+		if config['turn_off_auto_save']:
 			server.execute('save-on')
 
 
@@ -291,19 +350,19 @@ def confirm_restore(server, info):
 		server.wait_for_start()
 
 		server.logger.info('[QBM] Backup current world to avoid idiot')
-		overwrite_backup_path = BackupPath + '/' + OverwriteBackupFolder
+		overwrite_backup_path = os.path.join(config['backup_path'], config['overwrite_backup_folder'])
 		if os.path.exists(overwrite_backup_path):
 			shutil.rmtree(overwrite_backup_path)
-		copy_worlds(ServerPath, overwrite_backup_path)
+		copy_worlds(config['server_path'], overwrite_backup_path)
 		with open(os.path.join(overwrite_backup_path, 'info.txt'), 'w') as f:
 			f.write('Overwrite time: {}\n'.format(format_time()))
 			f.write('Confirmed by: {}'.format(info.player if info.is_player else '$Console$'))
 
 		slot_folder = get_slot_folder(slot)
 		server.logger.info('[QBM] Deleting world')
-		remove_worlds(ServerPath)
+		remove_worlds(config['server_path'])
 		server.logger.info('[QBM] Restore backup ' + slot_folder)
-		copy_worlds(slot_folder, ServerPath)
+		copy_worlds(slot_folder, config['server_path'])
 
 		server.start()
 	finally:
@@ -317,7 +376,7 @@ def trigger_abort(server, info):
 	print_message(server, info, '终止操作！', tell=False)
 
 
-def list_backup(server, info, size_display=SizeDisplay):
+def list_backup(server, info, size_display=config['size_display']):
 	def get_dir_size(dir):
 		size = 0
 		for root, dirs, files in os.walk(dir):
@@ -332,19 +391,22 @@ def list_backup(server, info, size_display=SizeDisplay):
 
 	print_message(server, info, '§d【槽位信息】§r', prefix='')
 	backup_size = 0
-	for i in range(SlotCount):
-		slot = i + 1
-		slot_info = format_slot_info(slot_number=slot)
+	for i in range(len(config['slots'])):
+		slot_idx = i + 1
+		slot_info = format_slot_info(slot_number=slot_idx)
 		if size_display:
-			dir_size = get_dir_size(get_slot_folder(slot))
+			dir_size = get_dir_size(get_slot_folder(slot_idx))
 		else:
 			dir_size = 0
 		backup_size += dir_size
-		text = RTextList('[槽位§6{}§r] '.format(slot))
+		# noinspection PyTypeChecker
+		text = RTextList(
+			RText('[槽位§6{}§r] '.format(slot_idx)).h('存档保护时长: ' + format_protection_time(config['slots'][slot_idx - 1]['delete_protection']))
+		)
 		if slot_info is not None:
 			text += RTextList(
-				RText('[▷] ', color=RColor.green).h(f'点击回档至槽位§6{slot}§r').c(RAction.run_command, f'{Prefix} back {slot}'),
-				RText('[×] ', color=RColor.red).h(f'点击删除槽位§6{slot}§r').c(RAction.suggest_command, f'{Prefix} del {slot}')
+				RText('[▷] ', color=RColor.green).h(f'点击回档至槽位§6{slot_idx}§r').c(RAction.run_command, f'{Prefix} back {slot_idx}'),
+				RText('[×] ', color=RColor.red).h(f'点击删除槽位§6{slot_idx}§r').c(RAction.suggest_command, f'{Prefix} del {slot_idx}')
 			)
 			if size_display:
 				text += '§2{}§r '.format(format_dir_size(dir_size))
@@ -391,9 +453,8 @@ def on_info(server, info):
 	cmd_len = len(command)
 
 	# MCDR permission check
-	global MinimumPermissionLevel
-	if cmd_len >= 2 and command[1] in MinimumPermissionLevel.keys():
-		if server.get_permission_level(info) < MinimumPermissionLevel[command[1]]:
+	if cmd_len >= 2 and command[1] in config['minimum_permission_level'].keys():
+		if server.get_permission_level(info) < config['minimum_permission_level'][command[1]]:
 			print_message(server, info, '§c权限不足！§r')
 			return
 
@@ -410,6 +471,10 @@ def on_info(server, info):
 	elif cmd_len in [2, 3] and command[1] == 'back':
 		restore_backup(server, info, command[2] if cmd_len == 3 else '1')
 
+	# !!qb delete
+	elif cmd_len == 3 and command[1] == 'del':
+		delete_backup(server, info, command[2])
+
 	# !!qb confirm
 	elif cmd_len == 2 and command[1] == 'confirm':
 		confirm_restore(server, info)
@@ -422,9 +487,9 @@ def on_info(server, info):
 	elif cmd_len == 2 and command[1] == 'list':
 		list_backup(server, info)
 
-	# !!qb delete
-	elif cmd_len == 3 and command[1] == 'del':
-		delete_backup(server, info, command[2])
+	# !!qb reload
+	elif cmd_len == 2 and command[1] == 'reload':
+		load_config(server, info)
 
 	else:
 		print_message(server, info, command_run(
@@ -434,13 +499,46 @@ def on_info(server, info):
 		))
 
 
+def load_config(server, info=None):
+	global config
+	try:
+		config = {}
+		with open(CONFIG_FILE) as file:
+			js = json.load(file)
+		for key in default_config.keys():
+			config[key] = js[key]
+		server.logger.info('Config file loaded')
+		if info:
+			print_message(server, info, '配置文件加载成功', tell=True)
+
+		# delete_protection check
+		last = 0
+		for i in range(len(config['slots'])):
+			# noinspection PyTypeChecker
+			this = config['slots'][i]['delete_protection']
+			if this < 0:
+				server.logger.warning('Slot {} has a negative delete protection time'.format(i + 1))
+			elif not last <= this:
+				server.logger.warning('Slot {} has a delete protection time smaller than the former one'.format(i + 1))
+			last = this
+	except:
+		server.logger.info('Fail to read config file, using default value')
+		if info:
+			print_message(server, info, '配置文件加载失败，使用默认配置', tell=True)
+		config = default_config
+		with open(CONFIG_FILE, 'w') as file:
+			json.dump(config, file, indent=4)
+
+
 def on_load(server, old):
-	server.add_help_message(Prefix, command_run('§a备份§r/§c回档§r，§6{}§r槽位'.format(SlotCount), '点击查看帮助信息', Prefix))
+	server.add_help_message(Prefix, command_run('§a备份§r/§c回档§r，§6{}§r槽位'.format(len(config['slots'])), '点击查看帮助信息', Prefix))
 	global creating_backup, restoring_backup
 	if hasattr(old, 'creating_backup') and type(old.creating_backup) == type(creating_backup):
 		creating_backup = old.creating_backup
 	if hasattr(old, 'restoring_backup') and type(old.restoring_backup) == type(restoring_backup):
 		restoring_backup = old.restoring_backup
+
+	load_config(server)
 
 
 def on_unload(server):
