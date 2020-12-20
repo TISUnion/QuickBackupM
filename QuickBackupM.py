@@ -388,6 +388,7 @@ def list_backup(server, info, size_display=SizeDisplay):
 	if size_display:
 		print_message(server, info, '备份总占用空间: §a{}§r'.format(format_dir_size(backup_size)), prefix='')
 
+
 def print_help_message(server, info):
 	if info.is_player:
 		server.reply(info, '')
@@ -460,7 +461,7 @@ def on_info(server, info):
 	elif cmd_len == 3 and command[1] == 'del':
 		delete_backup(server, info, command[2])
 
-	# share [<slot>]
+	# !!qb share [<slot>]
 	elif cmd_len in [2, 3] and command[1] == 'share':
 		share_backup(server, info, command[2] if cmd_len == 3 else '1')
 
