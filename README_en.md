@@ -7,7 +7,7 @@ A plugin for multi slot back up / restore your world
 
 The `master` branch is the Chinese version and the `english` branch is the English version
 
-Needs `0.8.2-alpha`+ [MCDReforged](https://github.com/Fallen-Breath/MCDReforged)
+Needs `v1.0.0`+ [MCDReforged](https://github.com/Fallen-Breath/MCDReforged)
 
 ![snapshot](https://raw.githubusercontent.com/TISUnion/QuickBackupM/master/snapshot_en.png)
 
