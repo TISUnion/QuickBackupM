@@ -56,7 +56,7 @@ default_config = config.copy()
 Prefix = '!!qb'
 CONFIG_FILE = os.path.join('config', 'QuickBackupM.json')
 HelpMessage = '''
------- {1} v{2} ------
+------ {1} v{2} with share ------
 一个支持多槽位的快速§a备份§r&§c回档§r插件
 §d【格式说明】§r
 §7{0}§r 显示帮助信息
@@ -410,28 +410,28 @@ def trigger_abort(source):
 	print_message(source, '终止操作！', tell=False)
 
 
-def share_backup(server, info, slot):
+def share_backup(source: CommandSource, slot):
 	global restoring_backup_lock, creating_backup_lock, sharing_backup_lock
 	if restoring_backup_lock.locked() or creating_backup_lock.locked():
-		print_message(server, info, '正在§a备份§r/§c回档§r中，请不要重复输入')
+		print_message(source, '正在§a备份§r/§c回档§r中，请不要重复输入')
 		return
 	acquired = sharing_backup_lock.acquire(blocking=False)
 	if not acquired:
-		print_message(server, info, '正在分享存档至云盘中，请不要重复输入')
+		print_message(source, '正在分享存档至云盘中，请不要重复输入')
 		return
 	try:
-		ret = slot_check(server, info, slot)
+		ret = slot_check(source, slot)
 		if ret is None:
 			return
 		else:
 			slot, slot_info = ret
 
 		dir_name = slot_info['time'].replace(' ', '_')
-		print_message(server, info, '传输中...请稍等')
+		print_message(source, '传输中...请稍等')
 		share_path = str(config['share_path'])
 		if share_path == '':  # wtf u r doing
-			print_message(server, info, '[ERROR] WRONG SHARE PATH WTF')
-			server.logger.warning('WRONG SHARE PATH WTF')
+			print_message(source, '[ERROR] WRONG SHARE PATH WTF')
+			source.get_server().logger.warning('WRONG SHARE PATH WTF')
 			return
 		else:
 			os.system('ssh root@{} "rm -rf {}/*" > nul'.format(config['share_address'], share_path))
@@ -441,7 +441,7 @@ def share_backup(server, info, slot):
 				config['share_address'],
 				os.path.join(share_path, dir_name)
 			))
-		print_message(server, info, '已经成功分享到内服云盘')
+		print_message(source, '已经成功分享到内服云盘')
 	finally:
 		sharing_backup_lock.release()
 
@@ -551,6 +551,11 @@ def register_command(server: ServerInterface):
 		then(
 			get_literal_node('del').
 			then(get_slot_node().runs(lambda src, ctx: delete_backup(src, ctx['slot'])))
+		).
+		then(
+			get_literal_node('share').
+			runs(lambda src: share_backup(src, 1)).
+			then(get_slot_node().runs(lambda src, ctx: share_backup(src, ctx['slot'])))
 		).
 		then(get_literal_node('confirm').runs(confirm_restore)).
 		then(get_literal_node('abort').runs(trigger_abort)).
