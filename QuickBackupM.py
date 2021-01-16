@@ -4,12 +4,14 @@ import re
 import shutil
 import time
 from threading import Lock
+from typing import Optional
 
 from mcdreforged.api.all import *
 
+PLUGIN_ID = 'quick_backup_multi'
 PLUGIN_METADATA = {
-	'id': 'quick_backup_multi',
-	'version': '1.0.0',
+	'id': PLUGIN_ID,
+	'version': '1.1.0',
 	'name': '§lQ§ruick §lB§rackup §lM§rulti',
 	'description': 'A backup and restore backup plugin, with multiple backup slots',
 	'author': [
@@ -20,6 +22,11 @@ PLUGIN_METADATA = {
 		'mcdreforged': '>=1.0.0-alpha.7',
 	}
 }
+
+BACKUP_DONE_EVENT 		= LiteralEvent('{}.backup_done'.format(PLUGIN_ID))  # -> source, slot_info
+RESTORE_DONE_EVENT 		= LiteralEvent('{}.restore_done'.format(PLUGIN_ID))  # -> source, slot, slot_info
+TRIGGER_BACKUP_EVENT 	= LiteralEvent('{}.trigger_backup'.format(PLUGIN_ID))  # <- source, comment
+TRIGGER_RESTORE_EVENT 	= LiteralEvent('{}.trigger_restore'.format(PLUGIN_ID))  # <- source, slot
 
 # 默认配置文件
 config = {
@@ -67,7 +74,7 @@ HelpMessage = '''
 §7{0} reload§r 重新加载配置文件
 当§6<slot>§r未被指定时默认选择槽位§61§r
 '''.strip().format(Prefix, PLUGIN_METADATA['name'], PLUGIN_METADATA['version'])
-slot_selected = None
+slot_selected = None  # type: Optional[int]
 abort_restore = False
 game_saved = False
 plugin_unloaded = False
@@ -263,7 +270,11 @@ def clean_up_slot_1():
 
 
 @new_thread('QBM')
-def create_backup(source: CommandSource, comment):
+def create_backup(source: CommandSource, comment: Optional[str]):
+	_create_backup(source, comment)
+
+
+def _create_backup(source: CommandSource, comment: Optional[str]):
 	global restoring_backup_lock, creating_backup_lock
 	if restoring_backup_lock.locked():
 		print_message(source, '正在§c回档§r中，请不要尝试备份', tell=False)
@@ -313,10 +324,10 @@ def create_backup(source: CommandSource, comment):
 		end_time = time.time()
 		print_message(source, '§a备份§r完成，耗时§6{}§r秒'.format(round(end_time - start_time, 1)), tell=False)
 		print_message(source, format_slot_info(info_dict=slot_info), tell=False)
-
-		source.get_server().dispatch_event(LiteralEvent('qbm.backup_done'), (source, ))  # just for showcase
 	except Exception as e:
 		print_message(source, '§a备份§r失败，错误代码{}'.format(e), tell=False)
+	else:
+		source.get_server().dispatch_event(BACKUP_DONE_EVENT, (source, slot_info))
 	finally:
 		creating_backup_lock.release()
 		if config['turn_off_auto_save']:
@@ -324,7 +335,7 @@ def create_backup(source: CommandSource, comment):
 
 
 @new_thread('QBM')
-def restore_backup(source: CommandSource, slot):
+def restore_backup(source: CommandSource, slot: int):
 	ret = slot_check(source, slot)
 	if ret is None:
 		return
@@ -345,6 +356,16 @@ def restore_backup(source: CommandSource, slot):
 
 @new_thread('QBM')
 def confirm_restore(source: CommandSource):
+	global slot_selected
+	if slot_selected is None:
+		print_message(source, '没有什么需要确认的', tell=False)
+	else:
+		slot = slot_selected
+		slot_selected = None
+		_do_restore_backup(source, slot)
+
+
+def _do_restore_backup(source: CommandSource, slot: int):
 	global restoring_backup_lock, creating_backup_lock
 	if creating_backup_lock.locked():
 		print_message(source, '正在§a备份§r中，请不要尝试回档', tell=False)
@@ -354,17 +375,11 @@ def confirm_restore(source: CommandSource):
 		print_message(source, '正在准备§c回档§r中，请不要重复输入', tell=False)
 		return
 	try:
-		global slot_selected
-		if slot_selected is None:
-			print_message(source, '没有什么需要确认的', tell=False)
-			return
-		slot = slot_selected
-		slot_selected = None
-
 		print_message(source, '10秒后关闭服务器§c回档§r', tell=False)
+		slot_info = get_slot_info(slot)
 		for countdown in range(1, 10):
 			print_message(source, command_run(
-				'还有{}秒，将§c回档§r为槽位§6{}§r，{}'.format(10 - countdown, slot, format_slot_info(slot_number=slot)),
+				'还有{}秒，将§c回档§r为槽位§6{}§r，{}'.format(10 - countdown, slot, format_slot_info(info_dict=slot_info)),
 				'点击终止回档！',
 				'{} abort'.format(Prefix)
 			), tell=False)
@@ -395,6 +410,10 @@ def confirm_restore(source: CommandSource):
 		copy_worlds(slot_folder, config['server_path'])
 
 		source.get_server().start()
+	except:
+		source.get_server().logger.exception('Fail to restore backup to slot {}, triggered by {}'.format(slot, source))
+	else:
+		source.get_server().dispatch_event(RESTORE_DONE_EVENT, (source, slot, slot_info))  # async dispatch
 	finally:
 		restoring_backup_lock.release()
 
@@ -550,6 +569,11 @@ def load_config(server, source: CommandSource or None = None):
 			json.dump(config, file, indent=4)
 
 
+def register_event_listeners(server: ServerInterface):
+	server.register_event_listener(TRIGGER_BACKUP_EVENT, lambda svr, source, comment: _create_backup(source, comment))
+	server.register_event_listener(TRIGGER_RESTORE_EVENT, lambda svr, source, slot: _do_restore_backup(source, slot))
+
+
 def on_load(server: ServerInterface, old):
 	global creating_backup_lock, restoring_backup_lock
 	if hasattr(old, 'creating_backup_lock') and type(old.creating_backup_lock) == type(creating_backup_lock):
@@ -558,8 +582,9 @@ def on_load(server: ServerInterface, old):
 		restoring_backup_lock = old.restoring_backup_lock
 
 	load_config(server)
-	server.register_help_message(Prefix, command_run('§a备份§r/§c回档§r，§6{}§r槽位'.format(get_slot_count()), '点击查看帮助信息', Prefix))
 	register_command(server)
+	register_event_listeners(server)
+	server.register_help_message(Prefix, command_run('§a备份§r/§c回档§r，§6{}§r槽位'.format(get_slot_count()), '点击查看帮助信息', Prefix))
 
 
 def on_unload(server):
