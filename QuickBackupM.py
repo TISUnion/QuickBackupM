@@ -11,8 +11,8 @@ from mcdreforged.api.all import *
 PLUGIN_ID = 'quick_backup_multi'
 PLUGIN_METADATA = {
 	'id': PLUGIN_ID,
-	'version': '1.1.0',
-	'name': '§lQ§ruick §lB§rackup §lM§rulti',
+	'version': '1.1.1',
+	'name': RTextList(RText('Q', styles=RStyle.bold), 'uick ', RText('B', styles=RStyle.bold), 'ackup ', RText('M', styles=RStyle.bold), 'ulti'),
 	'description': 'A backup and restore backup plugin, with multiple backup slots',
 	'author': [
 		'Fallen_Breath'
