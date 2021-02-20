@@ -508,10 +508,10 @@ def print_unknown_argument_message(source: CommandSource, error: UnknownArgument
 def register_command(server: ServerInterface):
 	def get_literal_node(literal):
 		lvl = config['minimum_permission_level'].get(literal, 0)
-		return Literal(literal).requires(lambda src: src.has_permission(lvl), failure_message_getter=lambda: '权限不足')
+		return Literal(literal).requires(lambda src: src.has_permission(lvl), lambda: '权限不足')
 
 	def get_slot_node():
-		return Integer('slot').requires(lambda src, ctx: 1 <= ctx['slot'] <= get_slot_count(), failure_message_getter=lambda: '错误的槽位序号')
+		return Integer('slot').requires(lambda src, ctx: 1 <= ctx['slot'] <= get_slot_count(), lambda: '错误的槽位序号')
 
 	server.register_command(
 		Literal(Prefix).
