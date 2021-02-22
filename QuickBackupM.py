@@ -492,7 +492,7 @@ def print_help_message(source: CommandSource):
 
 def on_info(server, info: Info):
 	if not info.is_user:
-		if info.content == 'Saved the game':
+		if info.content == 'Saved the game' or info.content == 'Saved the world':
 			global game_saved
 			game_saved = True
 
