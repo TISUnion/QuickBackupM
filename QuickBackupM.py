@@ -11,7 +11,7 @@ from mcdreforged.api.all import *
 PLUGIN_ID = 'quick_backup_multi'
 PLUGIN_METADATA = {
 	'id': PLUGIN_ID,
-	'version': '1.1.0',
+	'version': '1.1.2',
 	'name': '§lQ§ruick §lB§rackup §lM§rulti',
 	'description': 'A backup and restore backup plugin, with multiple backup slots',
 	'author': [
@@ -71,6 +71,7 @@ A plugin that supports multi slots world §abackup§r and backup §crestore§r
 §7{0} confirm§r Use after execute back to confirm §crestore§r execution
 §7{0} abort§r Abort backup §crestoring§r
 §7{0} list§r Display slot information
+§7{0} reload§r Reload config file
 When §6<slot>§r is not set the default value is §61§r
 '''.strip().format(Prefix, PLUGIN_METADATA['name'], PLUGIN_METADATA['version'])
 slot_selected = None  # type: Optional[int]
@@ -507,10 +508,10 @@ def print_unknown_argument_message(source: CommandSource, error: UnknownArgument
 def register_command(server: ServerInterface):
 	def get_literal_node(literal):
 		lvl = config['minimum_permission_level'].get(literal, 0)
-		return Literal(literal).requires(lambda src: src.has_permission(lvl), failure_message_getter=lambda: '权限不足')
+		return Literal(literal).requires(lambda src: src.has_permission(lvl), lambda: 'Permission Denied')
 
 	def get_slot_node():
-		return Integer('slot').requires(lambda src, ctx: 1 <= ctx['slot'] <= get_slot_count(), failure_message_getter=lambda: '错误的槽位序号')
+		return Integer('slot').requires(lambda src, ctx: 1 <= ctx['slot'] <= get_slot_count(), failure_message_getter=lambda: 'Wrong Slot Number')
 
 	server.register_command(
 		Literal(Prefix).
@@ -546,7 +547,7 @@ def load_config(server, source: CommandSource or None = None):
 		for key in default_config.keys():
 			config[key] = js[key]
 		server.logger.info('Config file loaded')
-		if info:
+		if source is not None:
 			print_message(source, 'Config file loaded', tell=True)
 
 		# delete_protection check
@@ -561,7 +562,7 @@ def load_config(server, source: CommandSource or None = None):
 			last = this
 	except:
 		server.logger.info('Fail to read config file, using default value')
-		if info:
+		if source is not None:
 			print_message(source, 'Fail to read config file, using default value', tell=True)
 		config = default_config
 		with open(CONFIG_FILE, 'w') as file:
