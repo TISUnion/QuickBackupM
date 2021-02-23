@@ -12,7 +12,7 @@ PLUGIN_ID = 'quick_backup_multi'
 PLUGIN_METADATA = {
 	'id': PLUGIN_ID,
 	'version': '1.1.2',
-	'name': '§lQ§ruick §lB§rackup §lM§rulti',
+	'name': RTextList(RText('Q', styles=RStyle.bold), 'uick ', RText('B', styles=RStyle.bold), 'ackup ', RText('M', styles=RStyle.bold), 'ulti'),
 	'description': 'A backup and restore backup plugin, with multiple backup slots',
 	'author': [
 		'Fallen_Breath'
@@ -511,7 +511,7 @@ def register_command(server: ServerInterface):
 		return Literal(literal).requires(lambda src: src.has_permission(lvl), lambda: 'Permission Denied')
 
 	def get_slot_node():
-		return Integer('slot').requires(lambda src, ctx: 1 <= ctx['slot'] <= get_slot_count(), failure_message_getter=lambda: 'Wrong Slot Number')
+		return Integer('slot').requires(lambda src, ctx: 1 <= ctx['slot'] <= get_slot_count(), lambda: 'Wrong Slot Number')
 
 	server.register_command(
 		Literal(Prefix).
