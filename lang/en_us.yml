@@ -1,0 +1,62 @@
+quick_backup_multi.help_message: |
+  ------  {1} v{2} ------
+  A plugin that supports multi slots world §abackup§r and backup §crestore§r
+  §d[Format]§r
+  §7{0}§r Display help message
+  §7{0} make §e[<comment>]§r Make a §abackup§r to slot §61§r. §e<comment>§r is an optional comment message
+  §7{0} back §6[<slot>]§r §cRestore§r the world to slot §6<slot>§r
+  §7{0} del §6[<slot>]§r §cDelete§r the world in slot §6<slot>§r
+  §7{0} confirm§r Use after execute back to confirm §crestore§r execution
+  §7{0} abort§r Abort backup §crestoring§r
+  §7{0} list§r Display slot information
+  §7{0} reload§r Reload config file
+  When §6<slot>§r is not set the default value is §61§r
+quick_backup_multi.second: "{0} seconds"
+quick_backup_multi.minute: "{0} minutes"
+quick_backup_multi.hour: "{0} hours"
+quick_backup_multi.day: "{0} days"
+quick_backup_multi.slot_info: "Date: {0}; Comment: {1}"
+quick_backup_multi.empty_comment: §7empty§r
+quick_backup_multi.unknown_slot: Slot format wrong, it should be a number between [{0}, {1}]
+quick_backup_multi.empty_slot: Slot §6{}§r is empty
+quick_backup_multi.delete_backup.success: §aSlot §6{0}§r delete success§r
+quick_backup_multi.delete_backup.fail: "§4Slot §6{0}§r delete fail, error code {1}§r"
+quick_backup_multi.create_backup.restoring: §cRestoring§r, don't back up
+quick_backup_multi.create_backup.backing_up: §aBacking up§r, don't spam
+quick_backup_multi.create_backup.start: §aBacking up§r, please wait
+quick_backup_multi.create_backup.abort.plugin_unload: Plugin unloaded, §aback up§r aborted!
+quick_backup_multi.create_backup.abort.no_slot: Available slot not found, §aback up§r aborted!
+quick_backup_multi.create_backup.success: §aBack up§r successfully, time cost §6{0}§rs
+quick_backup_multi.create_backup.fail: §aBack up§r unsuccessfully, error code {0}
+quick_backup_multi.restore_backup.echo_action: Gonna restore the world to slot §6{0}§r, {1}
+quick_backup_multi.restore_backup.confirm_hint: Use §7{0} confirm§r to confirm §crestore§r
+quick_backup_multi.restore_backup.confirm_hover: Click to confirm
+quick_backup_multi.restore_backup.abort_hint: §7{0} abort§r to abort
+quick_backup_multi.restore_backup.abort_hover: Click to abort
+quick_backup_multi.confirm_restore.nothing_to_confirm: Nothing to confirm
+quick_backup_multi.do_restore.backing_up: §aBacking up§r, don't restore
+quick_backup_multi.do_restore.restoring: §cRestoring§r, don't spam
+quick_backup_multi.do_restore.countdown.intro: §cRestore§r after 10 second
+quick_backup_multi.do_restore.countdown.text: "{0} second later the world will be §crestored§r to slot §6{1}§r, {2}"
+quick_backup_multi.do_restore.countdown.hover: Click to ABORT restore!
+quick_backup_multi.do_restore.abort: §cRestore§r aborted!
+quick_backup_multi.trigger_abort.abort: Operation terminated!
+quick_backup_multi.list_backup.title: §d[Slot Information]§r
+quick_backup_multi.list_backup.slot.header: "[Slot §6{}§r]"
+quick_backup_multi.list_backup.slot.protection: "Slot protection: {0}"
+quick_backup_multi.list_backup.slot.restore: Click to restore to slot §6{0}§r
+quick_backup_multi.list_backup.slot.delete: Click to delete slot §6{0}§r
+quick_backup_multi.list_backup.total_space: "Total space consumed: §a{0}§r"
+quick_backup_multi.print_help.hotbar: §d[Hotbar]§r
+quick_backup_multi.print_help.click_to_create.text: ">>> §aClick me to create a backup§r <<<"
+quick_backup_multi.print_help.click_to_create.hover: Remember to write the comment
+quick_backup_multi.print_help.click_to_create.command: "{0} make I'm a comment"
+quick_backup_multi.print_help.click_to_restore.text: ">>> §cClick me to restore to the latest backup§r <<<"
+quick_backup_multi.print_help.click_to_restore.hover: as known as the first slot
+quick_backup_multi.print_help.click_to_restore.command: "{0} back"
+quick_backup_multi.unknown_command.text: Unknown command, input §7{0}§r for more information
+quick_backup_multi.unknown_command.hover: Click to see help
+quick_backup_multi.command.permission_denied: Permission Denied
+quick_backup_multi.command.wrong_slot: Wrong Slot Number
+quick_backup_multi.register.summory_help: §aback up§r/§crestore§r your world with §6{0}§r slots
+quick_backup_multi.register.show_help: Click to see help

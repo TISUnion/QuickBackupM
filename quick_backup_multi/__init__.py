@@ -1,5 +1,4 @@
 import json
-import os
 import re
 import shutil
 import time
@@ -8,27 +7,8 @@ from typing import Optional
 
 from mcdreforged.api.all import *
 
-PLUGIN_ID = 'quick_backup_multi'
-PLUGIN_METADATA = {
-	'id': PLUGIN_ID,
-	'version': '1.1.3',
-	'name': RTextList(RText('Q', styles=RStyle.bold), 'uick ', RText('B', styles=RStyle.bold), 'ackup ', RText('M', styles=RStyle.bold), 'ulti'),
-	'description': 'A backup and restore backup plugin, with multiple backup slots',
-	'author': [
-		'Fallen_Breath'
-	],
-	'link': 'https://github.com/TISUnion/QuickBackupM',
-	'dependencies': {
-		'mcdreforged': '>=1.0.0-alpha.7',
-	}
-}
+from quick_backup_multi.constant import *
 
-BACKUP_DONE_EVENT 		= LiteralEvent('{}.backup_done'.format(PLUGIN_ID))  # -> source, slot_info
-RESTORE_DONE_EVENT 		= LiteralEvent('{}.restore_done'.format(PLUGIN_ID))  # -> source, slot, slot_info
-TRIGGER_BACKUP_EVENT 	= LiteralEvent('{}.trigger_backup'.format(PLUGIN_ID))  # <- source, comment
-TRIGGER_RESTORE_EVENT 	= LiteralEvent('{}.trigger_restore'.format(PLUGIN_ID))  # <- source, slot
-
-# 默认配置文件
 config = {
 	'size_display': True,
 	'turn_off_auto_save': True,
@@ -58,43 +38,17 @@ config = {
 	]
 }
 default_config = config.copy()
-Prefix = '!!qb'
-CONFIG_FILE = os.path.join('config', 'QuickBackupM.json')
-HelpMessage = '''
------- {1} v{2} ------
-一个支持多槽位的快速§a备份§r&§c回档§r插件
-§d【格式说明】§r
-§7{0}§r 显示帮助信息
-§7{0} make §e[<cmt>]§r 创建一个储存至槽位§61§r的§a备份§r。§e<cmt>§r为可选注释
-§7{0} back §6[<slot>]§r §c回档§r为槽位§6<slot>§r的存档
-§7{0} del §6[<slot>]§r §c删除§r槽位§6<slot>§r的存档
-§7{0} confirm§r 再次确认是否进行§c回档§r
-§7{0} abort§r 在任何时候键入此指令可中断§c回档§r
-§7{0} list§r 显示各槽位的存档信息
-§7{0} reload§r 重新加载配置文件
-当§6<slot>§r未被指定时默认选择槽位§61§r
-'''.strip().format(Prefix, PLUGIN_METADATA['name'], PLUGIN_METADATA['version'])
+HelpMessage = ''
 slot_selected = None  # type: Optional[int]
 abort_restore = False
 game_saved = False
 plugin_unloaded = False
 creating_backup_lock = Lock()
 restoring_backup_lock = Lock()
-'''
-mcdr_root/
-	server/
-		world/
-	qb_multi/
-		slot1/
-			info.json
-			world/
-		slot2/
-			...
-		...
-		overwrite/
-			info.txt
-			world/
-'''
+
+
+def tr(translation_key: str, *args):
+	return ServerInterface.get_instance().tr('quick_backup_multi.{}'.format(translation_key), *args)
 
 
 def print_message(source: CommandSource, msg, tell=True, prefix='[QBM] '):
@@ -139,8 +93,6 @@ def get_slot_info(slot):
 	try:
 		with open(os.path.join(get_slot_folder(slot), 'info.json')) as f:
 			info = json.load(f)
-		for key in info.keys():
-			value = info[key]
 	except:
 		info = None
 	return info
@@ -150,18 +102,15 @@ def format_time():
 	return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
 
 
-def format_protection_time(time_length):
-	"""
-	:rtype: str
-	"""
+def format_protection_time(time_length: float) -> str:
 	if time_length < 60:
-		return '{}秒'.format(time_length)
+		return tr('second', time_length)
 	elif time_length < 60 * 60:
-		return '{}分钟'.format(round(time_length / 60, 2))
+		return tr('minute', round(time_length / 60, 2))
 	elif time_length < 24 * 60 * 60:
-		return '{}小时'.format(round(time_length / 60 / 60, 2))
+		return tr('hour', round(time_length / 60 / 60, 2))
 	else:
-		return '{}天'.format(round(time_length / 60 / 60 / 24, 2))
+		return tr('day', round(time_length / 60 / 60 / 24, 2))
 
 
 def format_slot_info(info_dict=None, slot_number=None):
@@ -174,7 +123,7 @@ def format_slot_info(info_dict=None, slot_number=None):
 
 	if info is None:
 		return None
-	msg = '日期: {}; 注释: {}'.format(info['time'], info.get('comment', '§7空§r'))
+	msg = tr('slot_info', info['time'], info.get('comment', tr('empty_comment')))
 	return msg
 
 
@@ -203,12 +152,12 @@ def slot_number_formatter(slot):
 def slot_check(source, slot):
 	slot = slot_number_formatter(slot)
 	if slot is None:
-		print_message(source, '槽位输入错误，应输入一个位于[{}, {}]的数字'.format(1, get_slot_count()))
+		print_message(source, tr('unknown_slot', 1, get_slot_count()))
 		return None
 
 	slot_info = get_slot_info(slot)
 	if slot_info is None:
-		print_message(source, '槽位输入错误，槽位§6{}§r为空'.format(slot))
+		print_message(source, tr('empty_slot', slot))
 		return None
 	return slot, slot_info
 
@@ -222,9 +171,9 @@ def delete_backup(source, slot):
 	try:
 		shutil.rmtree(get_slot_folder(slot))
 	except Exception as e:
-		print_message(source, '§4删除槽位§6{}§r失败§r，错误代码：{}'.format(slot, e), tell=False)
+		print_message(source, tr('delete_backup.fail', slot, e), tell=False)
 	else:
-		print_message(source, '§a删除槽位§6{}§r完成§r'.format(slot), tell=False)
+		print_message(source, tr('delete_backup.success', slot), tell=False)
 
 
 def clean_up_slot_1():
@@ -277,14 +226,14 @@ def create_backup(source: CommandSource, comment: Optional[str]):
 def _create_backup(source: CommandSource, comment: Optional[str]):
 	global restoring_backup_lock, creating_backup_lock
 	if restoring_backup_lock.locked():
-		print_message(source, '正在§c回档§r中，请不要尝试备份', tell=False)
+		print_message(source, tr('create_backup.restoring'), tell=False)
 		return
 	acquired = creating_backup_lock.acquire(blocking=False)
 	if not acquired:
-		print_message(source, '正在§a备份§r中，请不要重复输入', tell=False)
+		print_message(source, tr('create_backup.backing_up'), tell=False)
 		return
 	try:
-		print_message(source, '§a备份§r中...请稍等', tell=False)
+		print_message(source, tr('create_backup.start'), tell=False)
 		start_time = time.time()
 		touch_backup_folder()
 
@@ -299,11 +248,11 @@ def _create_backup(source: CommandSource, comment: Optional[str]):
 			if game_saved:
 				break
 			if plugin_unloaded:
-				print_message(source, '插件重载，§a备份§r中断！', tell=False)
+				print_message(source, tr('create_backup.abort.plugin_unload'), tell=False)
 				return
 
 		if not clean_up_slot_1():
-			print_message(source, '未找到可用槽位，§a备份§r中断！', tell=False)
+			print_message(source, tr('create_backup.abort.no_slot'), tell=False)
 			return
 
 		slot_path = get_slot_folder(1)
@@ -322,10 +271,10 @@ def _create_backup(source: CommandSource, comment: Optional[str]):
 
 		# done
 		end_time = time.time()
-		print_message(source, '§a备份§r完成，耗时§6{}§r秒'.format(round(end_time - start_time, 1)), tell=False)
+		print_message(source, tr('create_backup.success', round(end_time - start_time, 1)), tell=False)
 		print_message(source, format_slot_info(info_dict=slot_info), tell=False)
 	except Exception as e:
-		print_message(source, '§a备份§r失败，错误代码{}'.format(e), tell=False)
+		print_message(source, tr('create_backup.fail', e), tell=False)
 	else:
 		source.get_server().dispatch_event(BACKUP_DONE_EVENT, (source, slot_info))
 	finally:
@@ -344,12 +293,12 @@ def restore_backup(source: CommandSource, slot: int):
 	global slot_selected, abort_restore
 	slot_selected = slot
 	abort_restore = False
-	print_message(source, '准备将存档恢复至槽位§6{}§r， {}'.format(slot, format_slot_info(info_dict=slot_info)), tell=False)
+	print_message(source, tr('restore_backup.echo_action', slot, format_slot_info(info_dict=slot_info)), tell=False)
 	print_message(
 		source,
-		command_run('使用§7{0} confirm§r 确认§c回档§r'.format(Prefix), '点击确认', '{0} confirm'.format(Prefix))
+		command_run(tr('restore_backup.confirm_hint', Prefix), tr('restore_backup.confirm_hover'), '{0} confirm'.format(Prefix))
 		+ ', '
-		+ command_run('§7{0} abort§r 取消'.format(Prefix), '点击取消', '{0} abort'.format(Prefix))
+		+ command_run(tr('restore_backup.abort_hint', Prefix), tr('restore_backup.abort_hover'), '{0} abort'.format(Prefix))
 		, tell=False
 	)
 
@@ -358,7 +307,7 @@ def restore_backup(source: CommandSource, slot: int):
 def confirm_restore(source: CommandSource):
 	global slot_selected
 	if slot_selected is None:
-		print_message(source, '没有什么需要确认的', tell=False)
+		print_message(source, tr('confirm_restore.nothing_to_confirm'), tell=False)
 	else:
 		slot = slot_selected
 		slot_selected = None
@@ -368,26 +317,26 @@ def confirm_restore(source: CommandSource):
 def _do_restore_backup(source: CommandSource, slot: int):
 	global restoring_backup_lock, creating_backup_lock
 	if creating_backup_lock.locked():
-		print_message(source, '正在§a备份§r中，请不要尝试回档', tell=False)
+		print_message(source, tr('do_restore.backing_up'), tell=False)
 		return
 	acquired = restoring_backup_lock.acquire(blocking=False)
 	if not acquired:
-		print_message(source, '正在准备§c回档§r中，请不要重复输入', tell=False)
+		print_message(source, tr('do_restore.restoring'), tell=False)
 		return
 	try:
-		print_message(source, '10秒后关闭服务器§c回档§r', tell=False)
+		print_message(source, tr('do_restore.countdown.intro'), tell=False)
 		slot_info = get_slot_info(slot)
 		for countdown in range(1, 10):
 			print_message(source, command_run(
-				'还有{}秒，将§c回档§r为槽位§6{}§r，{}'.format(10 - countdown, slot, format_slot_info(info_dict=slot_info)),
-				'点击终止回档！',
+				tr('do_restore.countdown.text', 10 - countdown, slot, format_slot_info(info_dict=slot_info)),
+				tr('do_restore.countdown.hover'),
 				'{} abort'.format(Prefix)
 			), tell=False)
 			for i in range(10):
 				time.sleep(0.1)
 				global abort_restore
 				if abort_restore:
-					print_message(source, '§c回档§r被中断！', tell=False)
+					print_message(source, tr('do_restore.abort'), tell=False)
 					return
 
 		source.get_server().stop()
@@ -422,7 +371,7 @@ def trigger_abort(source):
 	global abort_restore, slot_selected
 	abort_restore = True
 	slot_selected = None
-	print_message(source, '终止操作！', tell=False)
+	print_message(source, tr('trigger_abort.abort'), tell=False)
 
 
 @new_thread('QBM')
@@ -439,7 +388,7 @@ def list_backup(source: CommandSource, size_display=config['size_display']):
 		else:
 			return f'{round(size / 2 ** 30, 2)} GB'
 
-	print_message(source, '§d【槽位信息】§r', prefix='')
+	print_message(source, tr('list_backup.title'), prefix='')
 	backup_size = 0
 	for i in range(get_slot_count()):
 		slot_idx = i + 1
@@ -451,19 +400,20 @@ def list_backup(source: CommandSource, size_display=config['size_display']):
 		backup_size += dir_size
 		# noinspection PyTypeChecker
 		text = RTextList(
-			RText('[槽位§6{}§r] '.format(slot_idx)).h('存档保护时长: ' + format_protection_time(config['slots'][slot_idx - 1]['delete_protection']))
+			RText(tr('list_backup.slot.header', slot_idx)).h(tr('list_backup.slot.protection', format_protection_time(config['slots'][slot_idx - 1]['delete_protection']))),
+			' '
 		)
 		if slot_info is not None:
 			text += RTextList(
-				RText('[▷] ', color=RColor.green).h(f'点击回档至槽位§6{slot_idx}§r').c(RAction.run_command, f'{Prefix} back {slot_idx}'),
-				RText('[×] ', color=RColor.red).h(f'点击删除槽位§6{slot_idx}§r').c(RAction.suggest_command, f'{Prefix} del {slot_idx}')
+				RText('[▷] ', color=RColor.green).h(tr('list_backup.slot.restore', slot_idx)).c(RAction.run_command, f'{Prefix} back {slot_idx}'),
+				RText('[×] ', color=RColor.red).h(tr('list_backup.slot.delete', slot_idx)).c(RAction.suggest_command, f'{Prefix} del {slot_idx}')
 			)
 			if size_display:
 				text += '§2{}§r '.format(format_dir_size(dir_size))
 		text += slot_info
 		print_message(source, text, prefix='')
 	if size_display:
-		print_message(source, '备份总占用空间: §a{}§r'.format(format_dir_size(backup_size)), prefix='')
+		print_message(source, tr('list_backup.total_space', format_dir_size(backup_size)), prefix='')
 
 
 @new_thread('QBM')
@@ -479,13 +429,15 @@ def print_help_message(source: CommandSource):
 	list_backup(source, size_display=False).join()
 	print_message(
 		source,
-		'§d【快捷操作】§r' + '\n' +
-		RText('>>> §a点我创建一个备份§r <<<')
-			.h('记得修改注释')
-			.c(RAction.suggest_command, f'{Prefix} make 我是一个注释') + '\n' +
-		RText('>>> §c点我回档至最近的备份§r <<<')
-			.h('也就是回档至第一个槽位')
-			.c(RAction.suggest_command, f'{Prefix} back'),
+		tr('print_help.hotbar') +
+		'\n' +
+		RText(tr('print_help.click_to_create.text'))
+			.h(tr('print_help.click_to_create.hover'))
+			.c(RAction.suggest_command, tr('print_help.click_to_create.command', Prefix)) +
+		'\n' +
+		RText(tr('print_help.click_to_restore.text'))
+			.h(tr('print_help.click_to_restore.hover'))
+			.c(RAction.suggest_command, tr('print_help.click_to_restore.command', Prefix)),
 		prefix=''
 	)
 
@@ -499,19 +451,19 @@ def on_info(server, info: Info):
 
 def print_unknown_argument_message(source: CommandSource, error: UnknownArgument):
 	print_message(source, command_run(
-		'参数错误！请输入§7{}§r以获取插件信息'.format(Prefix),
-		'点击查看帮助',
+		tr('unknown_command.text', Prefix),
+		tr('unknown_command.hover'),
 		Prefix
 	))
 
 
-def register_command(server: ServerInterface):
+def register_command(server: PluginServerInterface):
 	def get_literal_node(literal):
 		lvl = config['minimum_permission_level'].get(literal, 0)
-		return Literal(literal).requires(lambda src: src.has_permission(lvl), lambda: '权限不足')
+		return Literal(literal).requires(lambda src: src.has_permission(lvl), lambda: tr('command.permission_denied'))
 
 	def get_slot_node():
-		return Integer('slot').requires(lambda src, ctx: 1 <= ctx['slot'] <= get_slot_count(), lambda: '错误的槽位序号')
+		return Integer('slot').requires(lambda src, ctx: 1 <= ctx['slot'] <= get_slot_count(), lambda: tr('command.wrong_slot'))
 
 	server.register_command(
 		Literal(Prefix).
@@ -540,51 +492,37 @@ def register_command(server: ServerInterface):
 
 def load_config(server, source: CommandSource or None = None):
 	global config
-	try:
-		config = {}
-		with open(CONFIG_FILE) as file:
-			js = json.load(file)
-		for key in default_config.keys():
-			config[key] = js[key]
-		server.logger.info('Config file loaded')
-		if source is not None:
-			print_message(source, '配置文件加载成功', tell=True)
-
-		# delete_protection check
-		last = 0
-		for i in range(get_slot_count()):
-			# noinspection PyTypeChecker
-			this = config['slots'][i]['delete_protection']
-			if this < 0:
-				server.logger.warning('Slot {} has a negative delete protection time'.format(i + 1))
-			elif not last <= this:
-				server.logger.warning('Slot {} has a delete protection time smaller than the former one'.format(i + 1))
-			last = this
-	except:
-		server.logger.info('Fail to read config file, using default value')
-		if source is not None:
-			print_message(source, '配置文件加载失败，使用默认配置', tell=True)
-		config = default_config
-		with open(CONFIG_FILE, 'w') as file:
-			json.dump(config, file, indent=4)
+	config = server.load_config_simple(CONFIG_FILE, default_config, in_data_folder=False, source_to_reply=source)
+	# delete_protection check
+	last = 0
+	for i in range(get_slot_count()):
+		# noinspection PyTypeChecker
+		this = config['slots'][i]['delete_protection']
+		if this < 0:
+			server.logger.warning('Slot {} has a negative delete protection time'.format(i + 1))
+		elif not last <= this:
+			server.logger.warning('Slot {} has a delete protection time smaller than the former one'.format(i + 1))
+		last = this
 
 
-def register_event_listeners(server: ServerInterface):
+def register_event_listeners(server: PluginServerInterface):
 	server.register_event_listener(TRIGGER_BACKUP_EVENT, lambda svr, source, comment: _create_backup(source, comment))
 	server.register_event_listener(TRIGGER_RESTORE_EVENT, lambda svr, source, slot: _do_restore_backup(source, slot))
 
 
-def on_load(server: ServerInterface, old):
-	global creating_backup_lock, restoring_backup_lock
+def on_load(server: PluginServerInterface, old):
+	global creating_backup_lock, restoring_backup_lock, HelpMessage
 	if hasattr(old, 'creating_backup_lock') and type(old.creating_backup_lock) == type(creating_backup_lock):
 		creating_backup_lock = old.creating_backup_lock
 	if hasattr(old, 'restoring_backup_lock') and type(old.restoring_backup_lock) == type(restoring_backup_lock):
 		restoring_backup_lock = old.restoring_backup_lock
 
+	meta = server.get_self_metadata()
+	HelpMessage = tr('help_message', Prefix, meta.name.to_colored_text(), meta.version)
 	load_config(server)
 	register_command(server)
 	register_event_listeners(server)
-	server.register_help_message(Prefix, command_run('§a备份§r/§c回档§r，§6{}§r槽位'.format(get_slot_count()), '点击查看帮助信息', Prefix))
+	server.register_help_message(Prefix, command_run(tr('register.summory_help', get_slot_count()), tr('register.show_help'), Prefix))
 
 
 def on_unload(server):

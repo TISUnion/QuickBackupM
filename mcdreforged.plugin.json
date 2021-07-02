@@ -1,0 +1,13 @@
+{
+	"id": "quick_backup_multi",
+	"version": "1.2.0",
+	"name": "Quick Backup Multi",
+	"description": "A backup and restore backup plugin, with multiple backup slots",
+	"author": [
+		"Fallen_Breath"
+	],
+	"link": "https://github.com/TISUnion/QuickBackupM",
+	"dependencies": {
+		"mcdreforged": ">=2.0.0-alpha.1"
+	}
+}
