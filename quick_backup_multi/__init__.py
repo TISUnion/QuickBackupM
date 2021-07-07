@@ -518,7 +518,7 @@ def on_load(server: PluginServerInterface, old):
 		restoring_backup_lock = old.restoring_backup_lock
 
 	meta = server.get_self_metadata()
-	HelpMessage = tr('help_message', Prefix, meta.name.to_colored_text(), meta.version)
+	HelpMessage = tr('help_message', Prefix, meta.name, meta.version)
 	load_config(server)
 	register_command(server)
 	register_event_listeners(server)

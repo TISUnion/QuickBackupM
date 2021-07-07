@@ -8,7 +8,7 @@
 	],
 	"link": "https://github.com/TISUnion/QuickBackupM",
 	"dependencies": {
-		"mcdreforged": ">=2.0.0-alpha.1"
+		"mcdreforged": ">=2.0.0-alpha.4"
 	},
 
 	"archive_name": "QuickBackupM-v{version}",
