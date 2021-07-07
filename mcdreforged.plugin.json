@@ -10,6 +10,8 @@
 	"dependencies": {
 		"mcdreforged": ">=2.0.0-alpha.1"
 	},
+
+	"archive_name": "QuickBackupM-v{version}",
 	"resources": [
 		"lang"
 	]
