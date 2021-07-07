@@ -5,7 +5,7 @@ on:
   pull_request:
 
 jobs:
-  pack:
+  package:
     runs-on: ubuntu-latest
 
     steps:
@@ -29,10 +29,9 @@ jobs:
 
     - name: Pack Plugin
       run: |
-        mkdir package
         python -m mcdreforged pack -o ./package
 
     - uses: actions/upload-artifact@v2
       with:
-        name: QuickBackupM package for ${{ github.sha }}
+        name: QuickBackupM distribution for ${{ github.sha }}
         path: package/
