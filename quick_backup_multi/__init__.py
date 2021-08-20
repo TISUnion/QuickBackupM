@@ -3,24 +3,29 @@ import re
 import shutil
 import time
 from threading import Lock
-from typing import Optional
+from typing import Optional, List, Dict
 
 from mcdreforged.api.all import *
 
 from quick_backup_multi.constant import *
 
-config = {
-	'size_display': True,
-	'turn_off_auto_save': True,
-	'ignore_session_lock': True,
-	'backup_path': './qb_multi',
-	'server_path': './server',
-	'overwrite_backup_folder': 'overwrite',
-	'world_names': [
-		'world',
-	],
-	# 0:guest 1:user 2:helper 3:admin
-	'minimum_permission_level': {
+
+class SlotInfo(Serializable):
+	delete_protection: int = 0
+
+
+class Configure(Serializable):
+	size_display: bool = True
+	turn_off_auto_save: bool = True
+	ignore_session_lock: bool = True
+	backup_path: str = './qb_multi'
+	server_path: str = './server'
+	overwrite_backup_folder: str = 'overwrite'
+	world_names: List[str] = [
+		'world'
+	]
+	# 0:guest 1:user 2:helper 3:admin 4:owner
+	minimum_permission_level: Dict[str, int] = {
 		'make': 1,
 		'back': 2,
 		'del': 2,
@@ -28,16 +33,17 @@ config = {
 		'abort': 1,
 		'reload': 2,
 		'list': 0,
-	},
-	'slots': [
-		{'delete_protection': 0},  # 无保护
-		{'delete_protection': 0},  # 无保护
-		{'delete_protection': 0},  # 无保护
-		{'delete_protection': 3 * 60 * 60},  # 三小时
-		{'delete_protection': 3 * 24 * 60 * 60},  # 三天
+	}
+	slots: List[SlotInfo] = [
+		SlotInfo(delete_protection=0),  # 无保护
+		SlotInfo(delete_protection=0),  # 无保护
+		SlotInfo(delete_protection=0),  # 无保护
+		SlotInfo(delete_protection=3 * 60 * 60),  # 三小时
+		SlotInfo(delete_protection=3 * 24 * 60 * 60),  # 三天
 	]
-}
-default_config = config.copy()
+
+
+config: Configure
 HelpMessage = ''
 slot_selected = None  # type: Optional[int]
 abort_restore = False
@@ -65,23 +71,23 @@ def command_run(message, text, command):
 
 def copy_worlds(src, dst):
 	def filter_ignore(path, files):
-		return [file for file in files if file == 'session.lock' and config['ignore_session_lock']]
-	for world in config['world_names']:
+		return [file for file in files if file == 'session.lock' and config.ignore_session_lock]
+	for world in config.world_names:
 		shutil.copytree(os.path.join(src, world),
 			os.path.realpath(os.path.join(dst, world)), ignore=filter_ignore)
 
 
 def remove_worlds(folder):
-	for world in config['world_names']:
+	for world in config.world_names:
 		shutil.rmtree(os.path.realpath(os.path.join(folder, world)))
 
 
 def get_slot_count():
-	return len(config['slots'])
+	return len(config.slots)
 
 
 def get_slot_folder(slot):
-	return os.path.join(config['backup_path'], f"slot{slot}")
+	return os.path.join(config.backup_path, f"slot{slot}")
 
 
 def get_slot_info(slot):
@@ -132,7 +138,7 @@ def touch_backup_folder():
 		if not os.path.exists(path):
 			os.mkdir(path)
 
-	mkdir(config['backup_path'])
+	mkdir(config.backup_path)
 	for i in range(get_slot_count()):
 		mkdir(get_slot_folder(i + 1))
 
@@ -195,8 +201,8 @@ def clean_up_slot_1():
 		else:
 			time_stamp = slot.get('time_stamp', None)
 			if time_stamp is not None:
-				slot_config_data = config['slots'][slot_idx - 1]  # type: dict
-				if time.time() - time_stamp > slot_config_data['delete_protection']:
+				slot_config_data = config.slots[slot_idx - 1]
+				if time.time() - time_stamp > slot_config_data.delete_protection:
 					max_available_idx = slot_idx
 			else:
 				# old format, treat it as available
@@ -240,7 +246,7 @@ def _create_backup(source: CommandSource, comment: Optional[str]):
 		# start backup
 		global game_saved, plugin_unloaded
 		game_saved = False
-		if config['turn_off_auto_save']:
+		if config.turn_off_auto_save:
 			source.get_server().execute('save-off')
 		source.get_server().execute('save-all flush')
 		while True:
@@ -258,7 +264,7 @@ def _create_backup(source: CommandSource, comment: Optional[str]):
 		slot_path = get_slot_folder(1)
 
 		# copy worlds to backup slot
-		copy_worlds(config['server_path'], slot_path)
+		copy_worlds(config.server_path, slot_path)
 		# create info.json
 		slot_info = {
 			'time': format_time(),
@@ -279,7 +285,7 @@ def _create_backup(source: CommandSource, comment: Optional[str]):
 		source.get_server().dispatch_event(BACKUP_DONE_EVENT, (source, slot_info))
 	finally:
 		creating_backup_lock.release()
-		if config['turn_off_auto_save']:
+		if config.turn_off_auto_save:
 			source.get_server().execute('save-on')
 
 
@@ -344,19 +350,19 @@ def _do_restore_backup(source: CommandSource, slot: int):
 		source.get_server().wait_for_start()
 
 		source.get_server().logger.info('[QBM] Backup current world to avoid idiot')
-		overwrite_backup_path = os.path.join(config['backup_path'], config['overwrite_backup_folder'])
+		overwrite_backup_path = os.path.join(config.backup_path, config.overwrite_backup_folder)
 		if os.path.exists(overwrite_backup_path):
 			shutil.rmtree(overwrite_backup_path)
-		copy_worlds(config['server_path'], overwrite_backup_path)
+		copy_worlds(config.server_path, overwrite_backup_path)
 		with open(os.path.join(overwrite_backup_path, 'info.txt'), 'w') as f:
 			f.write('Overwrite time: {}\n'.format(format_time()))
 			f.write('Confirmed by: {}'.format(source))
 
 		slot_folder = get_slot_folder(slot)
 		source.get_server().logger.info('[QBM] Deleting world')
-		remove_worlds(config['server_path'])
+		remove_worlds(config.server_path)
 		source.get_server().logger.info('[QBM] Restore backup ' + slot_folder)
-		copy_worlds(slot_folder, config['server_path'])
+		copy_worlds(slot_folder, config.server_path)
 
 		source.get_server().start()
 	except:
@@ -375,7 +381,10 @@ def trigger_abort(source):
 
 
 @new_thread('QBM')
-def list_backup(source: CommandSource, size_display=config['size_display']):
+def list_backup(source: CommandSource, size_display: bool = None):
+	if size_display is None:
+		size_display = config.size_display
+
 	def get_dir_size(dir):
 		size = 0
 		for root, dirs, files in os.walk(dir):
@@ -400,7 +409,7 @@ def list_backup(source: CommandSource, size_display=config['size_display']):
 		backup_size += dir_size
 		# noinspection PyTypeChecker
 		text = RTextList(
-			RText(tr('list_backup.slot.header', slot_idx)).h(tr('list_backup.slot.protection', format_protection_time(config['slots'][slot_idx - 1]['delete_protection']))),
+			RText(tr('list_backup.slot.header', slot_idx)).h(tr('list_backup.slot.protection', format_protection_time(config.slots[slot_idx - 1].delete_protection))),
 			' '
 		)
 		if slot_info is not None:
@@ -459,7 +468,7 @@ def print_unknown_argument_message(source: CommandSource, error: UnknownArgument
 
 def register_command(server: PluginServerInterface):
 	def get_literal_node(literal):
-		lvl = config['minimum_permission_level'].get(literal, 0)
+		lvl = config.minimum_permission_level.get(literal, 0)
 		return Literal(literal).requires(lambda src: src.has_permission(lvl), lambda: tr('command.permission_denied'))
 
 	def get_slot_node():
@@ -492,12 +501,10 @@ def register_command(server: PluginServerInterface):
 
 def load_config(server, source: CommandSource or None = None):
 	global config
-	config = server.load_config_simple(CONFIG_FILE, default_config, in_data_folder=False, source_to_reply=source)
-	# delete_protection check
+	config = server.load_config_simple(CONFIG_FILE, target_class=Configure, in_data_folder=False, source_to_reply=source)
 	last = 0
 	for i in range(get_slot_count()):
-		# noinspection PyTypeChecker
-		this = config['slots'][i]['delete_protection']
+		this = config.slots[i].delete_protection
 		if this < 0:
 			server.logger.warning('Slot {} has a negative delete protection time'.format(i + 1))
 		elif not last <= this:
