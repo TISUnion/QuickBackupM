@@ -73,13 +73,25 @@ def copy_worlds(src, dst):
 	def filter_ignore(path, files):
 		return [file for file in files if file == 'session.lock' and config.ignore_session_lock]
 	for world in config.world_names:
-		shutil.copytree(os.path.join(src, world),
-			os.path.realpath(os.path.join(dst, world)), ignore=filter_ignore)
+		src_path = os.path.join(src, world)
+		dst_path = os.path.join(dst, world)
+		if os.path.isdir(src_path):
+			shutil.copytree(src_path, dst_path, ignore=filter_ignore)
+		elif os.path.isfile(src_path):
+			shutil.copy(src_path, dst_path)
+		else:
+			ServerInterface.get_instance().logger.warning('[QBM] {} does not exist while copying ({} -> {})'.format(src_path, src_path, dst_path))
 
 
 def remove_worlds(folder):
 	for world in config.world_names:
-		shutil.rmtree(os.path.realpath(os.path.join(folder, world)))
+		target_path = os.path.join(folder, world)
+		if os.path.isdir(target_path):
+			shutil.rmtree(target_path)
+		elif os.path.isfile(target_path):
+			os.remove(target_path)
+		else:
+			ServerInterface.get_instance().logger.warning('[QBM] {} does not exist while removing'.format(target_path))
 
 
 def get_slot_count():
