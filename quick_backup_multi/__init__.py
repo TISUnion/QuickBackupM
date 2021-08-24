@@ -76,12 +76,13 @@ def copy_worlds(src, dst):
 	for world in config.world_names:
 		src_path = os.path.join(src, world)
 		dst_path = os.path.join(dst, world)
+		server_inst.logger.info('[QBM] copying {} -> {}'.format(src_path, dst_path))
 		if os.path.isdir(src_path):
 			shutil.copytree(src_path, dst_path, ignore=filter_ignore)
 		elif os.path.isfile(src_path):
 			shutil.copy(src_path, dst_path)
 		else:
-			ServerInterface.get_instance().logger.warning('[QBM] {} does not exist while copying ({} -> {})'.format(src_path, src_path, dst_path))
+			server_inst.logger.warning('[QBM] {} does not exist while copying ({} -> {})'.format(src_path, src_path, dst_path))
 
 
 def remove_worlds(folder):
@@ -232,6 +233,7 @@ def clean_up_slot_1():
 			shutil.rmtree(folder)
 		for i in reversed(range(1, target_slot_idx)):  # n-1, n-2, ..., 1
 			os.rename(get_slot_folder(i), get_slot_folder(i + 1))
+		os.mkdir(get_slot_folder(1))
 		return True
 	else:
 		return False
@@ -293,6 +295,7 @@ def _create_backup(source: CommandSource, comment: Optional[str]):
 		print_message(source, tr('create_backup.success', round(end_time - start_time, 1)), tell=False)
 		print_message(source, format_slot_info(info_dict=slot_info), tell=False)
 	except Exception as e:
+		source.get_server().logger.exception('[QBM] Error creating backup')
 		print_message(source, tr('create_backup.fail', e), tell=False)
 	else:
 		source.get_server().dispatch_event(BACKUP_DONE_EVENT, (source, slot_info))
