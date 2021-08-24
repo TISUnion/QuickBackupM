@@ -7,7 +7,7 @@
 
 `master` 分支为中文版，`english` 分支为英文版
 
-需要 `v1.0.0` 以上的 [MCDReforged](https://github.com/Fallen-Breath/MCDReforged)
+需要 `v2.0.1` 以上的 [MCDReforged](https://github.com/Fallen-Breath/MCDReforged)
 
 ![snapshot](https://raw.githubusercontent.com/TISUnion/QuickBackupM/master/snapshot.png)
 
