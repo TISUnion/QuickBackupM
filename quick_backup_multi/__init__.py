@@ -44,6 +44,7 @@ class Configure(Serializable):
 
 
 config: Configure
+server_inst: PluginServerInterface
 HelpMessage = ''
 slot_selected = None  # type: Optional[int]
 abort_restore = False
@@ -511,9 +512,9 @@ def register_command(server: PluginServerInterface):
 	)
 
 
-def load_config(server, source: CommandSource or None = None):
+def load_config(server: ServerInterface, source: CommandSource or None = None):
 	global config
-	config = server.load_config_simple(CONFIG_FILE, target_class=Configure, in_data_folder=False, source_to_reply=source)
+	config = server_inst.load_config_simple(CONFIG_FILE, target_class=Configure, in_data_folder=False, source_to_reply=source)
 	last = 0
 	for i in range(get_slot_count()):
 		this = config.slots[i].delete_protection
@@ -530,7 +531,8 @@ def register_event_listeners(server: PluginServerInterface):
 
 
 def on_load(server: PluginServerInterface, old):
-	global creating_backup_lock, restoring_backup_lock, HelpMessage
+	global creating_backup_lock, restoring_backup_lock, HelpMessage, server_inst
+	server_inst = server
 	if hasattr(old, 'creating_backup_lock') and type(old.creating_backup_lock) == type(creating_backup_lock):
 		creating_backup_lock = old.creating_backup_lock
 	if hasattr(old, 'restoring_backup_lock') and type(old.restoring_backup_lock) == type(restoring_backup_lock):
