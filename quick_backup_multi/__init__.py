@@ -80,6 +80,9 @@ def copy_worlds(src, dst):
 		if os.path.isdir(src_path):
 			shutil.copytree(src_path, dst_path, ignore=filter_ignore)
 		elif os.path.isfile(src_path):
+			dst_dir = os.path.dirname(dst_path)
+			if not os.path.isdir(dst_dir):
+				os.makedirs(dst_dir)
 			shutil.copy(src_path, dst_path)
 		else:
 			server_inst.logger.warning('[QBM] {} does not exist while copying ({} -> {})'.format(src_path, src_path, dst_path))
@@ -111,7 +114,7 @@ def get_slot_info(slot):
 	:rtype: dict or None
 	"""
 	try:
-		with open(os.path.join(get_slot_folder(slot), 'info.json')) as f:
+		with open(os.path.join(get_slot_folder(slot), 'info.json'), encoding='utf8') as f:
 			info = json.load(f)
 	except:
 		info = None
@@ -149,7 +152,9 @@ def format_slot_info(info_dict=None, slot_number=None):
 
 def touch_backup_folder():
 	def mkdir(path):
-		if not os.path.exists(path):
+		if os.path.isfile(path):
+			os.remove(path)
+		if not os.path.isdir(path):
 			os.mkdir(path)
 
 	mkdir(config.backup_path)
@@ -287,8 +292,8 @@ def _create_backup(source: CommandSource, comment: Optional[str]):
 		}
 		if comment is not None:
 			slot_info['comment'] = comment
-		with open(os.path.join(slot_path, 'info.json'), 'w') as f:
-			json.dump(slot_info, f, indent=4)
+		with open(os.path.join(slot_path, 'info.json'), 'w', encoding='utf8') as f:
+			json.dump(slot_info, f, indent=4, ensure_ascii=False)
 
 		# done
 		end_time = time.time()
