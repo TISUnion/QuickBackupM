@@ -164,6 +164,6 @@ mcd_root/
 }
 ```
 
-一个字典，代表使用不同类型指令需要权限等级。数值含义见[此处](https://github.com/Fallen-Breath/MCDReforged/blob/master/doc/readme_cn.md#权限)
+一个字典，代表使用不同类型指令需要权限等级。数值含义见[此处](https://mcdreforged.readthedocs.io/zh_CN/latest/permission.html)
 
 把所有数值设置成 `0` 以让所有人均可操作

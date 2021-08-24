@@ -163,6 +163,6 @@ Default:
 }
 ```
 
-A dict for minimum permission level requirement. For the meaning of these value check [this](https://github.com/Fallen-Breath/MCDReforged/blob/master/doc/readme.md#权限)
+A dict for minimum permission level requirement. For the meaning of these value check [this](https://mcdreforged.readthedocs.io/en/latest/permission.html)
 
 Set everything to `0` so everyone can use every command
