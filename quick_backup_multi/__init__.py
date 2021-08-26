@@ -4,7 +4,7 @@ import re
 import shutil
 import time
 from threading import Lock
-from typing import Optional
+from typing import Optional, Any
 
 from mcdreforged.api.all import *
 
@@ -14,7 +14,7 @@ from quick_backup_multi.constant import BACKUP_DONE_EVENT, Prefix, RESTORE_DONE_
 
 config: Configure
 server_inst: PluginServerInterface
-HelpMessage = ''
+HelpMessage: RTextBase
 slot_selected = None  # type: Optional[int]
 abort_restore = False
 game_saved = False
@@ -23,23 +23,24 @@ creating_backup_lock = Lock()
 restoring_backup_lock = Lock()
 
 
-def tr(translation_key: str, *args):
-	return ServerInterface.get_instance().tr('quick_backup_multi.{}'.format(translation_key), *args)
+def tr(translation_key: str, *args) -> RTextMCDRTranslation:
+	return ServerInterface.get_instance().rtr('quick_backup_multi.{}'.format(translation_key), *args)
 
 
 def print_message(source: CommandSource, msg, tell=True, prefix='[QBM] '):
-	msg = prefix + msg
+	msg = RTextList(prefix, msg)
 	if source.is_player and not tell:
 		source.get_server().say(msg)
 	else:
 		source.reply(msg)
 
 
-def command_run(message, text, command):
-	return RText(message).set_hover_text(text).set_click_event(RAction.run_command, command)
+def command_run(message: Any, text: Any, command: str) -> RTextBase:
+	fancy_text = message.copy() if isinstance(message, RTextBase) else RText(message)
+	return fancy_text.set_hover_text(text).set_click_event(RAction.run_command, command)
 
 
-def copy_worlds(src, dst):
+def copy_worlds(src: str, dst: str):
 	for world in config.world_names:
 		src_path = os.path.join(src, world)
 		dst_path = os.path.join(dst, world)
@@ -92,7 +93,7 @@ def format_time():
 	return time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
 
 
-def format_protection_time(time_length: float) -> str:
+def format_protection_time(time_length: float) -> RTextBase:
 	if time_length < 60:
 		return tr('second', time_length)
 	elif time_length < 60 * 60:
@@ -417,26 +418,27 @@ def list_backup(source: CommandSource, size_display: bool = None):
 def print_help_message(source: CommandSource):
 	if source.is_player:
 		source.reply('')
-	for line in HelpMessage.splitlines():
-		prefix = re.search(r'(?<=§7){}[\w ]*(?=§)'.format(Prefix), line)
-		if prefix is not None:
-			print_message(source, RText(line).set_click_event(RAction.suggest_command, prefix.group()), prefix='')
-		else:
-			print_message(source, line, prefix='')
-	list_backup(source, size_display=False).join()
-	print_message(
-		source,
-		tr('print_help.hotbar') +
-		'\n' +
-		RText(tr('print_help.click_to_create.text'))
-			.h(tr('print_help.click_to_create.hover'))
-			.c(RAction.suggest_command, tr('print_help.click_to_create.command', Prefix)) +
-		'\n' +
-		RText(tr('print_help.click_to_restore.text'))
-			.h(tr('print_help.click_to_restore.hover'))
-			.c(RAction.suggest_command, tr('print_help.click_to_restore.command', Prefix)),
-		prefix=''
-	)
+	with source.preferred_language_context():
+		for line in HelpMessage.to_plain_text().splitlines():
+			prefix = re.search(r'(?<=§7){}[\w ]*(?=§)'.format(Prefix), line)
+			if prefix is not None:
+				print_message(source, RText(line).set_click_event(RAction.suggest_command, prefix.group()), prefix='')
+			else:
+				print_message(source, line, prefix='')
+		list_backup(source, size_display=False).join()
+		print_message(
+			source,
+			tr('print_help.hotbar') +
+			'\n' +
+			RText(tr('print_help.click_to_create.text'))
+				.h(tr('print_help.click_to_create.hover'))
+				.c(RAction.suggest_command, tr('print_help.click_to_create.command', Prefix).to_plain_text()) +
+			'\n' +
+			RText(tr('print_help.click_to_restore.text'))
+				.h(tr('print_help.click_to_restore.hover'))
+				.c(RAction.suggest_command, tr('print_help.click_to_restore.command', Prefix).to_plain_text()),
+			prefix=''
+		)
 
 
 def on_info(server, info: Info):
@@ -457,10 +459,10 @@ def print_unknown_argument_message(source: CommandSource, error: UnknownArgument
 def register_command(server: PluginServerInterface):
 	def get_literal_node(literal):
 		lvl = config.minimum_permission_level.get(literal, 0)
-		return Literal(literal).requires(lambda src: src.has_permission(lvl), lambda: tr('command.permission_denied'))
+		return Literal(literal).requires(lambda src: src.has_permission(lvl)).on_error(RequirementNotMet, lambda src: src.replt(tr('command.permission_denied')), handled=True)
 
 	def get_slot_node():
-		return Integer('slot').requires(lambda src, ctx: 1 <= ctx['slot'] <= get_slot_count(), lambda: tr('command.wrong_slot'))
+		return Integer('slot').requires(lambda src, ctx: 1 <= ctx['slot'] <= get_slot_count()).on_error(RequirementNotMet, lambda src: src.replt(tr('command.wrong_slot')), handled=True)
 
 	server.register_command(
 		Literal(Prefix).
