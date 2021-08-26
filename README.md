@@ -103,11 +103,21 @@ mcd_root/
 
 是否在备份时临时关闭自动保存
 
-### ignore_session_lock
+### ignored_files
 
-默认值: `true`
+默认值:
 
-是否在备份时忽略文件 `session.lock`。这可以解决 `session.lock` 被服务端占用导致备份失败的问题
+```
+"ignored_files": [
+    "session.lock"
+]
+```
+
+在备份时忽略的文件名列表，默认仅包含 `session.lock` 以解决 `session.lock` 被服务端占用导致备份失败的问题
+
+若文件名字符串以 `*` 开头，则将忽略以指定字符串结尾的文件，如 `*.test` 表示忽略所有以 `.test` 结尾的文件，如 `a.test`
+
+若文件名字符串以 `*` 结尾，则将忽略以指定字符串开头的文件，如 `temp*` 表示忽略所有以 `temp` 开头的文件，如 `tempfile`
 
 ### backup_path
 

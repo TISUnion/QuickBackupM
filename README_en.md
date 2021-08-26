@@ -103,11 +103,23 @@ Default: `true`
 
 If turn off auto save when making backup or not
 
-### IgnoreSessionLock
+### ignored_files
 
-Default: `true`
+If ignore file `session.lock` during backup, which can 
 
-If ignore file `session.lock` during backup, which can solve the back up failure problem caused by `session.lock` being occupied by the server
+Default:
+
+```
+"ignored_files": [
+    "session.lock"
+]
+```
+
+A list of file names to be ignored during backup. It contains `session.lock` by default to solve the back up failure problem caused by `session.lock` being occupied by the server
+
+If the name string starts with `*`, then it will ignore files with name ending with specific string, e.g. `*.test` makes all files ends with `.test` be ignored, like `a.test`
+
+If the name string ends with `*`, then it will ignore files with name starting with specific string, e.g. `temp*`  makes all files starts with `temp` be ignored, like `tempfile`
 
 ### backup_path
 

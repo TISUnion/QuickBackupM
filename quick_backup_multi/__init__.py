@@ -1,47 +1,16 @@
 import json
+import os
 import re
 import shutil
 import time
 from threading import Lock
-from typing import Optional, List, Dict
+from typing import Optional
 
 from mcdreforged.api.all import *
 
-from quick_backup_multi.constant import *
-
-
-class SlotInfo(Serializable):
-	delete_protection: int = 0
-
-
-class Configure(Serializable):
-	size_display: bool = True
-	turn_off_auto_save: bool = True
-	ignore_session_lock: bool = True
-	backup_path: str = './qb_multi'
-	server_path: str = './server'
-	overwrite_backup_folder: str = 'overwrite'
-	world_names: List[str] = [
-		'world'
-	]
-	# 0:guest 1:user 2:helper 3:admin 4:owner
-	minimum_permission_level: Dict[str, int] = {
-		'make': 1,
-		'back': 2,
-		'del': 2,
-		'confirm': 1,
-		'abort': 1,
-		'reload': 2,
-		'list': 0,
-	}
-	slots: List[SlotInfo] = [
-		SlotInfo(delete_protection=0),  # 无保护
-		SlotInfo(delete_protection=0),  # 无保护
-		SlotInfo(delete_protection=0),  # 无保护
-		SlotInfo(delete_protection=3 * 60 * 60),  # 三小时
-		SlotInfo(delete_protection=3 * 24 * 60 * 60),  # 三天
-	]
-
+from quick_backup_multi.config import Configure
+from quick_backup_multi.constant import BACKUP_DONE_EVENT, Prefix, RESTORE_DONE_EVENT, TRIGGER_BACKUP_EVENT, \
+	CONFIG_FILE, TRIGGER_RESTORE_EVENT
 
 config: Configure
 server_inst: PluginServerInterface
@@ -71,21 +40,19 @@ def command_run(message, text, command):
 
 
 def copy_worlds(src, dst):
-	def filter_ignore(path, files):
-		return [file for file in files if file == 'session.lock' and config.ignore_session_lock]
 	for world in config.world_names:
 		src_path = os.path.join(src, world)
 		dst_path = os.path.join(dst, world)
-		server_inst.logger.info('[QBM] copying {} -> {}'.format(src_path, dst_path))
+		server_inst.logger.info('copying {} -> {}'.format(src_path, dst_path))
 		if os.path.isdir(src_path):
-			shutil.copytree(src_path, dst_path, ignore=filter_ignore)
+			shutil.copytree(src_path, dst_path, ignore=lambda path, files: filter(config.is_file_ignored, files))
 		elif os.path.isfile(src_path):
 			dst_dir = os.path.dirname(dst_path)
 			if not os.path.isdir(dst_dir):
 				os.makedirs(dst_dir)
 			shutil.copy(src_path, dst_path)
 		else:
-			server_inst.logger.warning('[QBM] {} does not exist while copying ({} -> {})'.format(src_path, src_path, dst_path))
+			server_inst.logger.warning('{} does not exist while copying ({} -> {})'.format(src_path, src_path, dst_path))
 
 
 def remove_worlds(folder):
@@ -367,10 +334,10 @@ def _do_restore_backup(source: CommandSource, slot: int):
 					return
 
 		source.get_server().stop()
-		source.get_server().logger.info('[QBM] Wait for server to stop')
+		server_inst.logger.info('Wait for server to stop')
 		source.get_server().wait_for_start()
 
-		source.get_server().logger.info('[QBM] Backup current world to avoid idiot')
+		server_inst.logger.info('Backup current world to avoid idiot')
 		overwrite_backup_path = os.path.join(config.backup_path, config.overwrite_backup_folder)
 		if os.path.exists(overwrite_backup_path):
 			shutil.rmtree(overwrite_backup_path)
@@ -380,14 +347,14 @@ def _do_restore_backup(source: CommandSource, slot: int):
 			f.write('Confirmed by: {}'.format(source))
 
 		slot_folder = get_slot_folder(slot)
-		source.get_server().logger.info('[QBM] Deleting world')
+		server_inst.logger.info('Deleting world')
 		remove_worlds(config.server_path)
-		source.get_server().logger.info('[QBM] Restore backup ' + slot_folder)
+		server_inst.logger.info('Restore backup ' + slot_folder)
 		copy_worlds(slot_folder, config.server_path)
 
 		source.get_server().start()
 	except:
-		source.get_server().logger.exception('Fail to restore backup to slot {}, triggered by {}'.format(slot, source))
+		server_inst.logger.exception('Fail to restore backup to slot {}, triggered by {}'.format(slot, source))
 	else:
 		source.get_server().dispatch_event(RESTORE_DONE_EVENT, (source, slot, slot_info))  # async dispatch
 	finally:
