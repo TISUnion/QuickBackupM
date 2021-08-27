@@ -459,10 +459,10 @@ def print_unknown_argument_message(source: CommandSource, error: UnknownArgument
 def register_command(server: PluginServerInterface):
 	def get_literal_node(literal):
 		lvl = config.minimum_permission_level.get(literal, 0)
-		return Literal(literal).requires(lambda src: src.has_permission(lvl)).on_error(RequirementNotMet, lambda src: src.replt(tr('command.permission_denied')), handled=True)
+		return Literal(literal).requires(lambda src: src.has_permission(lvl)).on_error(RequirementNotMet, lambda src: src.reply(tr('command.permission_denied')), handled=True)
 
 	def get_slot_node():
-		return Integer('slot').requires(lambda src, ctx: 1 <= ctx['slot'] <= get_slot_count()).on_error(RequirementNotMet, lambda src: src.replt(tr('command.wrong_slot')), handled=True)
+		return Integer('slot').requires(lambda src, ctx: 1 <= ctx['slot'] <= get_slot_count()).on_error(RequirementNotMet, lambda src: src.reply(tr('command.wrong_slot')), handled=True)
 
 	server.register_command(
 		Literal(Prefix).
