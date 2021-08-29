@@ -46,6 +46,7 @@ class Configure(Serializable):
 					return True
 				if file_name == item:
 					return True
+		return False
 
 
 if __name__ == '__main__':

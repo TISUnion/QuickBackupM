@@ -46,7 +46,7 @@ def copy_worlds(src: str, dst: str):
 		dst_path = os.path.join(dst, world)
 		server_inst.logger.info('copying {} -> {}'.format(src_path, dst_path))
 		if os.path.isdir(src_path):
-			shutil.copytree(src_path, dst_path, ignore=lambda path, files: filter(config.is_file_ignored, files))
+			shutil.copytree(src_path, dst_path, ignore=lambda path, files: set(filter(config.is_file_ignored, files)))
 		elif os.path.isfile(src_path):
 			dst_dir = os.path.dirname(dst_path)
 			if not os.path.isdir(dst_dir):
