@@ -137,6 +137,12 @@ mcd_root/
 
 被覆盖的存档的备份位置，在配置文件均为默认值的情况下路径为 `./qb_multi/overwrite`
 
+### use_speedcopy
+
+默认值: `False`
+
+使用 `speedcopy` 加速 Windows 共享 的传输速度。需要 [speedcopy](https://pypi.org/project/speedcopy/) 包。更多技术细节请参考此包的 README。
+
 ### world_names
 
 默认值:

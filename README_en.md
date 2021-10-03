@@ -139,6 +139,12 @@ Default: `overwrite`
 
 The backup position of the overwritten world. With default config file the path will be `./qb_multi/overwrite`
 
+### use_speedcopy
+
+Default: `False`
+
+Use `speedcopy` to accelerate transfer on windows shares. Need [speedcopy](https://pypi.org/project/speedcopy/) package. Refer to the package description to see more details.
+
 ### WorldNames
 
 Default:

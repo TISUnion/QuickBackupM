@@ -16,6 +16,7 @@ class Configure(Serializable):
 	backup_path: str = './qb_multi'
 	server_path: str = './server'
 	overwrite_backup_folder: str = 'overwrite'
+	use_speedcopy: bool = False
 	world_names: List[str] = [
 		'world'
 	]

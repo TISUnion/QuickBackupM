@@ -3,6 +3,7 @@ import os
 import re
 import shutil
 import time
+from importlib import import_module
 from threading import Lock
 from typing import Optional, Any
 
@@ -500,6 +501,17 @@ def load_config(server: ServerInterface, source: CommandSource or None = None):
 		elif not last <= this:
 			server.logger.warning('Slot {} has a delete protection time smaller than the former one'.format(i + 1))
 		last = this
+	load_speedcopy(server)
+
+def load_speedcopy(server: ServerInterface):
+	if config.use_speedcopy:
+		try:
+			import_module('speedcopy').patch_copyfile()
+		except ModuleNotFoundError:
+			server.logger.warning('Speedcopy module not found. Using original copyfile method.')
+	elif hasattr(shutil, '_orig_copyfile'):
+		shutil.copyfile = shutil._orig_copyfile
+		delattr(shutil, '_orig_copyfile')
 
 
 def register_event_listeners(server: PluginServerInterface):
