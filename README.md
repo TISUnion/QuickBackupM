@@ -141,7 +141,7 @@ mcd_root/
 
 默认值: `False`
 
-使用 `speedcopy` 加速 Windows 共享 的传输速度。需要 [speedcopy](https://pypi.org/project/speedcopy/) 包。更多技术细节请参考此包的 README。
+使用 `speedcopy` 加速传输速度。需要 [speedcopy](https://pypi.org/project/speedcopy/) 包。更多技术细节请参考此包的 README。
 
 ### world_names
 

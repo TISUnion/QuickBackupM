@@ -143,7 +143,7 @@ The backup position of the overwritten world. With default config file the path 
 
 Default: `False`
 
-Use `speedcopy` to accelerate transfer on windows shares. Need [speedcopy](https://pypi.org/project/speedcopy/) package. Refer to the package description to see more details.
+Use `speedcopy` to accelerate transfer. Need [speedcopy](https://pypi.org/project/speedcopy/) package. Refer to the package description to see more details.
 
 ### WorldNames
 
