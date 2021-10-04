@@ -504,14 +504,18 @@ def load_config(server: ServerInterface, source: CommandSource or None = None):
 	load_speedcopy(server)
 
 def load_speedcopy(server: ServerInterface):
-	if config.use_speedcopy:
-		try:
-			import_module('speedcopy').patch_copyfile()
-		except ModuleNotFoundError:
-			server.logger.warning('Speedcopy module not found. Using original copyfile method.')
-	elif hasattr(shutil, '_orig_copyfile'):
-		shutil.copyfile = shutil._orig_copyfile
-		delattr(shutil, '_orig_copyfile')
+	try:
+		speedcopy = import_module('speedcopy')
+		speedcopy.unpatch_copyfile()
+	except ModuleNotFoundError:
+		speedcopy = None
+	except AttributeError:
+		pass
+	if config.use_speedcopy and speedcopy is not None:
+			speedcopy.patch_copyfile()
+			server.logger.info('Using speedcopy as copyfile method.')
+	else:
+		server.logger.info('Using original shutil.copyfile as copyfile method.')
 
 
 def register_event_listeners(server: PluginServerInterface):
