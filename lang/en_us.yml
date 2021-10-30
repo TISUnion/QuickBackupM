@@ -26,7 +26,7 @@ quick_backup_multi.create_backup.backing_up: §aBacking up§r, don't spam
 quick_backup_multi.create_backup.start: §aBacking up§r, please wait
 quick_backup_multi.create_backup.abort.plugin_unload: Plugin unloaded, §aback up§r aborted!
 quick_backup_multi.create_backup.abort.no_slot: Available slot not found, §aback up§r aborted!
-quick_backup_multi.create_backup.success: §aBack up§r successfully, time cost §6{0}§rs
+quick_backup_multi.create_backup.success: §aBack up§r successfully, time elapsed §6{0}§rs
 quick_backup_multi.create_backup.fail: §aBack up§r unsuccessfully, error code {0}
 quick_backup_multi.restore_backup.echo_action: Gonna restore the world to slot §6{0}§r, {1}
 quick_backup_multi.restore_backup.confirm_hint: Use §7{0} confirm§r to confirm §crestore§r
