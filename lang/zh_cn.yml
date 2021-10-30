@@ -1,62 +1,85 @@
-quick_backup_multi.help_message: |
-  ------ {1} v{2} ------
-  一个支持多槽位的快速§a备份§r&§c回档§r插件
-  §d【格式说明】§r
-  §7{0}§r 显示帮助信息
-  §7{0} make §e[<cmt>]§r 创建一个储存至槽位§61§r的§a备份§r。§e<cmt>§r为可选注释
-  §7{0} back §6[<slot>]§r §c回档§r为槽位§6<slot>§r的存档
-  §7{0} del §6[<slot>]§r §c删除§r槽位§6<slot>§r的存档
-  §7{0} confirm§r 再次确认是否进行§c回档§r
-  §7{0} abort§r 在任何时候键入此指令可中断§c回档§r
-  §7{0} list§r 显示各槽位的存档信息
-  §7{0} reload§r 重新加载配置文件
-  当§6<slot>§r未被指定时默认选择槽位§61§r
-quick_backup_multi.second: "{0}秒"
-quick_backup_multi.minute: "{0}分钟"
-quick_backup_multi.hour: "{0}小时"
-quick_backup_multi.day: "{0}天"
-quick_backup_multi.slot_info: "日期: {0}; 注释: {1}"
-quick_backup_multi.empty_comment: §7空§r
-quick_backup_multi.unknown_slot: 槽位输入错误，应输入一个位于[{0}, {1}]的数字
-quick_backup_multi.empty_slot: 槽位输入错误，槽位§6{0}§r为空
-quick_backup_multi.delete_backup.success: §a删除槽位§6{0}§r完成§r
-quick_backup_multi.delete_backup.fail: "§4删除槽位§6{0}§r失败§r，错误代码: {1}"
-quick_backup_multi.create_backup.restoring: 正在§c回档§r中，请不要尝试备份
-quick_backup_multi.create_backup.backing_up: 正在§a备份§r中，请不要重复输入
-quick_backup_multi.create_backup.start: §a备份§r中...请稍等
-quick_backup_multi.create_backup.abort.plugin_unload: 插件重载，§a备份§r中断！
-quick_backup_multi.create_backup.abort.no_slot: 未找到可用槽位，§a备份§r中断！
-quick_backup_multi.create_backup.success: §a备份§r完成，耗时§6{0}§r秒
-quick_backup_multi.create_backup.fail: §a备份§r失败，错误代码{0}
-quick_backup_multi.restore_backup.echo_action: 准备将存档恢复至槽位§6{0}§r，{1}
-quick_backup_multi.restore_backup.confirm_hint: 使用§7{0} confirm§r 确认§c回档§r
-quick_backup_multi.restore_backup.confirm_hover: 点击确认
-quick_backup_multi.restore_backup.abort_hint: §7{0} abort§r 取消
-quick_backup_multi.restore_backup.abort_hover: 点击取消
-quick_backup_multi.confirm_restore.nothing_to_confirm: 没有什么需要确认的
-quick_backup_multi.do_restore.backing_up: 正在§a备份§r中，请不要尝试回档
-quick_backup_multi.do_restore.restoring: 正在准备§c回档§r中，请不要重复输入
-quick_backup_multi.do_restore.countdown.intro: 10秒后关闭服务器§c回档§r
-quick_backup_multi.do_restore.countdown.text: 还有{0}秒，将§c回档§r为槽位§6{1}§r，{2}
-quick_backup_multi.do_restore.countdown.hover: 点击终止回档！
-quick_backup_multi.do_restore.abort: §c回档§r被中断！
-quick_backup_multi.trigger_abort.abort: 终止操作！
-quick_backup_multi.list_backup.title: §d【槽位信息】§r
-quick_backup_multi.list_backup.slot.header: "[槽位§6{0}§r]"
-quick_backup_multi.list_backup.slot.protection: "存档保护时长: {0}"
-quick_backup_multi.list_backup.slot.restore: 点击回档至槽位§6{0}§r
-quick_backup_multi.list_backup.slot.delete: 点击删除槽位§6{0}§r
-quick_backup_multi.list_backup.total_space: "备份总占用空间: §a{0}§r"
-quick_backup_multi.print_help.hotbar: §d【快捷操作】§r
-quick_backup_multi.print_help.click_to_create.text: ">>> §a点我创建一个备份§r <<<"
-quick_backup_multi.print_help.click_to_create.hover: 记得修改注释
-quick_backup_multi.print_help.click_to_create.command: "{0} make 我是一个注释"
-quick_backup_multi.print_help.click_to_restore.text: ">>> §c点我回档至最近的备份§r <<<"
-quick_backup_multi.print_help.click_to_restore.hover: 也就是回档至第一个槽位
-quick_backup_multi.print_help.click_to_restore.command: "{0} back"
-quick_backup_multi.unknown_command.text: 参数错误！请输入§7{0}§r以获取插件信息
-quick_backup_multi.unknown_command.hover: 点击查看帮助
-quick_backup_multi.command.permission_denied: 权限不足
-quick_backup_multi.command.wrong_slot: 槽位输入错误
-quick_backup_multi.register.summory_help: §a备份§r/§c回档§r，§6{0}§r槽位
-quick_backup_multi.register.show_help: 点击查看帮助信息
+quick_backup_multi:
+  help_message: |
+    ------ {1} v{2} ------
+    一个支持多槽位的快速§a备份§r&§c回档§r插件
+    §d【格式说明】§r
+    §7{0}§r 显示帮助信息
+    §7{0} make §e[<cmt>]§r 创建一个储存至槽位§61§r的§a备份§r。§e<cmt>§r为可选注释
+    §7{0} back §6[<slot>]§r §c回档§r为槽位§6<slot>§r的存档
+    §7{0} del §6[<slot>]§r §c删除§r槽位§6<slot>§r的存档
+    §7{0} confirm§r 再次确认是否进行§c回档§r
+    §7{0} abort§r 在任何时候键入此指令可中断§c回档§r
+    §7{0} list§r 显示各槽位的存档信息
+    §7{0} reload§r 重新加载配置文件
+    当§6<slot>§r未被指定时默认选择槽位§61§r
+
+  second: "{0}秒"
+  minute: "{0}分钟"
+  hour: "{0}小时"
+  day: "{0}天"
+  slot_info: "日期: {0}; 注释: {1}"
+  empty_comment: §7空§r
+  unknown_slot: 槽位输入错误，应输入一个位于[{0}, {1}]的数字
+  empty_slot: 槽位输入错误，槽位§6{0}§r为空
+
+  delete_backup:
+    success: §a删除槽位§6{0}§r完成§r
+    fail: "§4删除槽位§6{0}§r失败§r，错误代码: {1}"
+
+  create_backup:
+    restoring: 正在§c回档§r中，请不要尝试备份
+    backing_up: 正在§a备份§r中，请不要重复输入
+    start: §a备份§r中...请稍等
+    abort.plugin_unload: 插件重载，§a备份§r中断！
+    abort.no_slot: 未找到可用槽位，§a备份§r中断！
+    success: §a备份§r完成，耗时§6{0}§r秒
+    fail: §a备份§r失败，错误代码{0}
+
+  restore_backup:
+    echo_action: 准备将存档恢复至槽位§6{0}§r，{1}
+    confirm_hint: 使用§7{0} confirm§r 确认§c回档§r
+    confirm_hover: 点击确认
+    abort_hint: §7{0} abort§r 取消
+    abort_hover: 点击取消
+
+  confirm_restore.nothing_to_confirm: 没有什么需要确认的
+
+  do_restore:
+    backing_up: 正在§a备份§r中，请不要尝试回档
+    restoring: 正在准备§c回档§r中，请不要重复输入
+    countdown.intro: 10秒后关闭服务器§c回档§r
+    countdown.text: 还有{0}秒，将§c回档§r为槽位§6{1}§r，{2}
+    countdown.hover: 点击终止回档！
+    abort: §c回档§r被中断！
+
+  trigger_abort.abort: 终止操作！
+
+  list_backup:
+    title: §d【槽位信息】§r
+    slot:
+      header: "[槽位§6{0}§r]"
+      protection: "存档保护时长: {0}"
+      restore: 点击回档至槽位§6{0}§r
+      delete: 点击删除槽位§6{0}§r
+    total_space: "备份总占用空间: §a{0}§r"
+
+  print_help:
+    hotbar: §d【快捷操作】§r
+    click_to_create:
+      text: ">>> §a点我创建一个备份§r <<<"
+      hover: 记得修改注释
+      command: "{0} make 我是一个注释"
+    click_to_restore:
+      text: ">>> §c点我回档至最近的备份§r <<<"
+      hover: 也就是回档至第一个槽位
+      command: "{0} back"
+
+  unknown_command:
+    text: 参数错误！请输入§7{0}§r以获取插件信息
+    hover: 点击查看帮助
+  command:
+    permission_denied: 权限不足
+    wrong_slot: 槽位输入错误
+  register:
+    summory_help: §a备份§r/§c回档§r，§6{0}§r槽位
+    show_help: 点击查看帮助信息
