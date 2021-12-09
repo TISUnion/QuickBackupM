@@ -158,6 +158,7 @@ def single_op(name: RTextBase):
 	return wrapper
 
 
+@new_thread('QBM - delete')
 @single_op(tr('operations.delete'))
 def delete_backup(source: CommandSource, slot: int):
 	if slot_check(source, slot) is None:
