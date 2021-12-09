@@ -1,6 +1,6 @@
 quick_backup_multi:
   help_message: |
-    ------ {1} v{2} ------
+    ------ {1} - TIS v{2} ------
     一个支持多槽位的快速§a备份§r&§c回档§r插件
     §d【格式说明】§r
     §7{0}§r 显示帮助信息
@@ -28,6 +28,7 @@ quick_backup_multi:
     delete: §a删除槽位§r
     create: §a备份§r
     restore: §c回档§r
+    share: §9分享§r
 
   delete_backup:
     success: §a删除槽位§6{0}§r完成§r
@@ -58,9 +59,7 @@ quick_backup_multi:
   trigger_abort.abort: 终止操作！
 
   share_backup:
-    backing_up_or_restoring: 正在§a备份§r/§c回档§r中，请不要重复输入
-    sharing: 正在分享存档至云盘中，请不要重复输入
-    transfer_start: 传输中...请稍等
+    transfer_start: §9分享§r中...请稍等
     done: 已经成功分享到内服云盘
 
   list_backup:

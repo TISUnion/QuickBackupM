@@ -1,6 +1,6 @@
 quick_backup_multi:
   help_message: |
-    ------  {1} v{2} ------
+    ------ {1} - TIS v{2} ------
     A plugin that supports multi slots world §abackup§r and backup §crestore§r
     §d[Format]§r
     §7{0}§r Display help message
@@ -28,6 +28,7 @@ quick_backup_multi:
     delete: §aDeleting slot§r
     create: §aBacking up§r
     restore: §cRestoring§r
+    share: §9Sharing§r
 
   delete_backup:
     success: §aSlot §6{0}§r delete success§r
@@ -56,6 +57,10 @@ quick_backup_multi:
     abort: §cRestore§r aborted!
 
   trigger_abort.abort: Operation terminated!
+
+  share_backup:
+    transfer_start: §9Sharing§r the world... please wait
+    done: Sharing succeeded
 
   list_backup:
     title: §d[Slot Information]§r

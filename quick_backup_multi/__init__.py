@@ -354,15 +354,8 @@ def trigger_abort(source: CommandSource):
 
 
 @new_thread('QBM - share')
-def share_backup(source: CommandSource, slot):
-	global restoring_backup_lock, creating_backup_lock, sharing_backup_lock
-	if restoring_backup_lock.locked() or creating_backup_lock.locked():
-		print_message(source, tr('share_backup.backing_up_or_restoring'))
-		return
-	acquired = sharing_backup_lock.acquire(blocking=False)
-	if not acquired:
-		print_message(source, tr('share_backup.sharing'))
-		return
+@single_op(tr('operations.share'))
+def share_backup(source: CommandSource, slot: int):
 	try:
 		ret = slot_check(source, slot)
 		if ret is None:
