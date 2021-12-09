@@ -10,6 +10,7 @@ quick_backup_multi:
     §7{0} confirm§r Use after execute back to confirm §crestore§r execution
     §7{0} abort§r Abort backup §crestoring§r
     §7{0} list§r Display slot information
+    §7{0} share §6[<slot>]§r Share the world to the TIS cloud disk
     §7{0} reload§r Reload config file
     When §6<slot>§r is not set the default value is §61§r
 

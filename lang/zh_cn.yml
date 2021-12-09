@@ -10,6 +10,7 @@ quick_backup_multi:
     §7{0} confirm§r 再次确认是否进行§c回档§r
     §7{0} abort§r 在任何时候键入此指令可中断§c回档§r
     §7{0} list§r 显示各槽位的存档信息
+    §7{0} share §6[<slot>]§r 分享存档至内服云盘
     §7{0} reload§r 重新加载配置文件
     当§6<slot>§r未被指定时默认选择槽位§61§r
 
@@ -53,6 +54,12 @@ quick_backup_multi:
     abort: §c回档§r被中断！
 
   trigger_abort.abort: 终止操作！
+
+  share_backup:
+    backing_up_or_restoring: 正在§a备份§r/§c回档§r中，请不要重复输入
+    sharing: 正在分享存档至云盘中，请不要重复输入
+    transfer_start: 传输中...请稍等
+    done: 已经成功分享到内服云盘
 
   list_backup:
     title: §d【槽位信息】§r

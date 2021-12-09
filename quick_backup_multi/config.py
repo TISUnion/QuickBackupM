@@ -36,6 +36,8 @@ class Configure(Serializable):
 		SlotInfo(delete_protection=3 * 60 * 60),  # 三小时
 		SlotInfo(delete_protection=3 * 24 * 60 * 60),  # 三天
 	]
+	share_path: str = '/home/shared'
+	share_address: str = '192.168.0.0'
 
 	def is_file_ignored(self, file_name: str) -> bool:
 		for item in self.ignored_files:

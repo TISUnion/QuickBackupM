@@ -21,6 +21,7 @@ game_saved = False
 plugin_unloaded = False
 creating_backup_lock = Lock()
 restoring_backup_lock = Lock()
+sharing_backup_lock = Lock()
 
 
 def tr(translation_key: str, *args) -> RTextMCDRTranslation:
@@ -369,6 +370,44 @@ def trigger_abort(source):
 	print_message(source, tr('trigger_abort.abort'), tell=False)
 
 
+@new_thread('QBM - share')
+def share_backup(source: CommandSource, slot):
+	global restoring_backup_lock, creating_backup_lock, sharing_backup_lock
+	if restoring_backup_lock.locked() or creating_backup_lock.locked():
+		print_message(source, tr('share_backup.backing_up_or_restoring'))
+		return
+	acquired = sharing_backup_lock.acquire(blocking=False)
+	if not acquired:
+		print_message(source, tr('share_backup.sharing'))
+		return
+	try:
+		ret = slot_check(source, slot)
+		if ret is None:
+			return
+		else:
+			slot, slot_info = ret
+
+		dir_name = slot_info['time'].replace(' ', '_')
+		print_message(source, tr('share_backup.transfer_start'))
+		share_path = str(config.share_path)
+		if share_path == '':  # wtf u r doing
+			print_message(source, '[ERROR] WRONG SHARE PATH WTF')
+			source.get_server().logger.warning('WRONG SHARE PATH WTF')
+			return
+		else:
+			# we have smart "rm" so no "-rf"
+			os.system('ssh root@{} "rm {}/*" > nul'.format(config.share_address, share_path))
+		for world in config.world_names:
+			os.system('scp -r {} root@{}:{} > nul'.format(
+				os.path.join(get_slot_folder(slot), world),
+				config.share_address,
+				os.path.join(share_path, dir_name)
+			))
+		print_message(source, tr('share_backup.done'))
+	finally:
+		sharing_backup_lock.release()
+
+
 @new_thread('QBM')
 def list_backup(source: CommandSource, size_display: bool = None):
 	if size_display is None:
@@ -482,6 +521,11 @@ def register_command(server: PluginServerInterface):
 			get_literal_node('del').
 			then(get_slot_node().runs(lambda src, ctx: delete_backup(src, ctx['slot'])))
 		).
+		then(
+			get_literal_node('share').
+			runs(lambda src: share_backup(src, 1)).
+			then(get_slot_node().runs(lambda src, ctx: share_backup(src, ctx['slot'])))
+		).
 		then(get_literal_node('confirm').runs(confirm_restore)).
 		then(get_literal_node('abort').runs(trigger_abort)).
 		then(get_literal_node('list').runs(lambda src: list_backup(src))).
@@ -508,12 +552,14 @@ def register_event_listeners(server: PluginServerInterface):
 
 
 def on_load(server: PluginServerInterface, old):
-	global creating_backup_lock, restoring_backup_lock, HelpMessage, server_inst
+	global creating_backup_lock, restoring_backup_lock, sharing_backup_lock, HelpMessage, server_inst
 	server_inst = server
 	if hasattr(old, 'creating_backup_lock') and type(old.creating_backup_lock) == type(creating_backup_lock):
 		creating_backup_lock = old.creating_backup_lock
 	if hasattr(old, 'restoring_backup_lock') and type(old.restoring_backup_lock) == type(restoring_backup_lock):
 		restoring_backup_lock = old.restoring_backup_lock
+	if hasattr(old, 'sharing_backup_lock') and type(old.sharing_backup_lock) == type(sharing_backup_lock):
+		sharing_backup_lock = old.sharing_backup_lock
 
 	meta = server.get_self_metadata()
 	HelpMessage = tr('help_message', Prefix, meta.name, meta.version)
