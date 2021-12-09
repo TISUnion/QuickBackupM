@@ -23,13 +23,17 @@ quick_backup_multi:
   unknown_slot: Slot format wrong, it should be a number between [{0}, {1}]
   empty_slot: Slot §6{}§r is empty
 
+  lock.warning: Executing "{0}", please don't spam
+  operations:
+    delete: §aDeleting slot§r
+    create: §aBacking up§r
+    restore: §cRestoring§r
+
   delete_backup:
     success: §aSlot §6{0}§r delete success§r
     fail: "§4Slot §6{0}§r delete fail, error code {1}§r"
 
   create_backup:
-    restoring: §cRestoring§r, don't back up
-    backing_up: §aBacking up§r, don't spam
     start: §aBacking up§r, please wait
     abort.plugin_unload: Plugin unloaded, §aback up§r aborted!
     abort.no_slot: Available slot not found, §aback up§r aborted!
@@ -46,8 +50,6 @@ quick_backup_multi:
   confirm_restore.nothing_to_confirm: Nothing to confirm
 
   do_restore:
-    backing_up: §aBacking up§r, don't restore
-    restoring: §cRestoring§r, don't spam
     countdown.intro: §cRestore§r after 10 second
     countdown.text: "{0} second later the world will be §crestored§r to slot §6{1}§r, {2}"
     countdown.hover: Click to ABORT restore!

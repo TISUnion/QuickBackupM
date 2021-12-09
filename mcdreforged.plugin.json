@@ -1,7 +1,7 @@
 {
 	"id": "quick_backup_multi",
-	"version": "1.4.3",
-	"name": "Quick Backup Multi - TIS",
+	"version": "1.4.4",
+	"name": "Quick Backup Multi",
 	"description": {
 		"en_us": "A backup / restore plugin, with multiple backup slot",
 		"zh_cn": "多槽位备份/回档插件"
