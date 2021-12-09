@@ -22,13 +22,17 @@ quick_backup_multi:
   unknown_slot: 槽位输入错误，应输入一个位于[{0}, {1}]的数字
   empty_slot: 槽位输入错误，槽位§6{0}§r为空
 
+  lock.warning: 正在{0}中，请等待操作执行完成
+  operations:
+    delete: §a删除槽位§r
+    create: §a备份§r
+    restore: §c回档§r
+
   delete_backup:
     success: §a删除槽位§6{0}§r完成§r
     fail: "§4删除槽位§6{0}§r失败§r，错误代码: {1}"
 
   create_backup:
-    restoring: 正在§c回档§r中，请不要尝试备份
-    backing_up: 正在§a备份§r中，请不要重复输入
     start: §a备份§r中...请稍等
     abort.plugin_unload: 插件重载，§a备份§r中断！
     abort.no_slot: 未找到可用槽位，§a备份§r中断！
@@ -45,8 +49,6 @@ quick_backup_multi:
   confirm_restore.nothing_to_confirm: 没有什么需要确认的
 
   do_restore:
-    backing_up: 正在§a备份§r中，请不要尝试回档
-    restoring: 正在准备§c回档§r中，请不要重复输入
     countdown.intro: 10秒后关闭服务器§c回档§r
     countdown.text: 还有{0}秒，将§c回档§r为槽位§6{1}§r，{2}
     countdown.hover: 点击终止回档！

@@ -1,10 +1,11 @@
+import functools
 import json
 import os
 import re
 import shutil
 import time
 from threading import Lock
-from typing import Optional, Any
+from typing import Optional, Any, Callable
 
 from mcdreforged.api.all import *
 
@@ -19,8 +20,8 @@ slot_selected = None  # type: Optional[int]
 abort_restore = False
 game_saved = False
 plugin_unloaded = False
-creating_backup_lock = Lock()
-restoring_backup_lock = Lock()
+operation_lock = Lock()
+operation_name = RText('?')
 
 
 def tr(translation_key: str, *args) -> RTextMCDRTranslation:
@@ -56,7 +57,7 @@ def copy_worlds(src: str, dst: str):
 			server_inst.logger.warning('{} does not exist while copying ({} -> {})'.format(src_path, src_path, dst_path))
 
 
-def remove_worlds(folder):
+def remove_worlds(folder: str):
 	for world in config.world_names:
 		target_path = os.path.join(folder, world)
 		if os.path.isdir(target_path):
@@ -71,11 +72,11 @@ def get_slot_count():
 	return len(config.slots)
 
 
-def get_slot_folder(slot):
+def get_slot_folder(slot: int):
 	return os.path.join(config.backup_path, f"slot{slot}")
 
 
-def get_slot_info(slot):
+def get_slot_info(slot: int):
 	"""
 	:param int slot: the index of the slot
 	:return: the slot info
@@ -104,22 +105,21 @@ def format_protection_time(time_length: float) -> RTextBase:
 		return tr('day', round(time_length / 60 / 60 / 24, 2))
 
 
-def format_slot_info(info_dict=None, slot_number=None):
-	if type(info_dict) is dict:
+def format_slot_info(info_dict: Optional[dict] = None, slot_number: Optional[int] = None) -> Optional[RTextBase]:
+	if isinstance(info_dict, dict):
 		info = info_dict
-	elif type(slot_number) is not None:
+	elif slot_number is not None:
 		info = get_slot_info(slot_number)
 	else:
 		return None
 
 	if info is None:
 		return None
-	msg = tr('slot_info', info['time'], info.get('comment', tr('empty_comment')))
-	return msg
+	return tr('slot_info', info['time'], info.get('comment', tr('empty_comment')))
 
 
 def touch_backup_folder():
-	def mkdir(path):
+	def mkdir(path: str):
 		if os.path.isfile(path):
 			os.remove(path)
 		if not os.path.isdir(path):
@@ -130,21 +130,8 @@ def touch_backup_folder():
 		mkdir(get_slot_folder(i + 1))
 
 
-def slot_number_formatter(slot):
-	flag_fail = False
-	if type(slot) is not int:
-		try:
-			slot = int(slot)
-		except ValueError:
-			flag_fail = True
-	if flag_fail or not 1 <= slot <= get_slot_count():
-		return None
-	return slot
-
-
-def slot_check(source, slot):
-	slot = slot_number_formatter(slot)
-	if slot is None:
+def slot_check(source: CommandSource, slot: int):
+	if not 1 <= slot <= get_slot_count():
 		print_message(source, tr('unknown_slot', 1, get_slot_count()))
 		return None
 
@@ -155,10 +142,25 @@ def slot_check(source, slot):
 	return slot, slot_info
 
 
-def delete_backup(source, slot):
-	global creating_backup_lock, restoring_backup_lock
-	if creating_backup_lock.locked() or restoring_backup_lock.locked():
-		return
+def single_op(name: RTextBase):
+	def wrapper(func: Callable):
+		@functools.wraps(func)
+		def wrap(source: CommandSource, *args, **kwargs):
+			acq = operation_lock.acquire(blocking=False)
+			if acq:
+				try:
+					func(source, *args, **kwargs)
+				finally:
+					operation_lock.release()
+			else:
+				print_message(source, tr('lock.warning', name))
+		return wrap
+	return wrapper
+
+
+@new_thread('QBM - delete')
+@single_op(tr('operations.delete'))
+def delete_backup(source: CommandSource, slot: int):
 	if slot_check(source, slot) is None:
 		return
 	try:
@@ -212,20 +214,13 @@ def clean_up_slot_1():
 		return False
 
 
-@new_thread('QBM')
+@new_thread('QBM - create')
 def create_backup(source: CommandSource, comment: Optional[str]):
 	_create_backup(source, comment)
 
 
+@single_op(tr('operations.create'))
 def _create_backup(source: CommandSource, comment: Optional[str]):
-	global restoring_backup_lock, creating_backup_lock
-	if restoring_backup_lock.locked():
-		print_message(source, tr('create_backup.restoring'), tell=False)
-		return
-	acquired = creating_backup_lock.acquire(blocking=False)
-	if not acquired:
-		print_message(source, tr('create_backup.backing_up'), tell=False)
-		return
 	try:
 		print_message(source, tr('create_backup.start'), tell=False)
 		start_time = time.time()
@@ -273,12 +268,10 @@ def _create_backup(source: CommandSource, comment: Optional[str]):
 	else:
 		source.get_server().dispatch_event(BACKUP_DONE_EVENT, (source, slot_info))
 	finally:
-		creating_backup_lock.release()
 		if config.turn_off_auto_save:
 			source.get_server().execute('save-on')
 
 
-@new_thread('QBM')
 def restore_backup(source: CommandSource, slot: int):
 	ret = slot_check(source, slot)
 	if ret is None:
@@ -298,7 +291,7 @@ def restore_backup(source: CommandSource, slot: int):
 	)
 
 
-@new_thread('QBM')
+@new_thread('QBM - restore')
 def confirm_restore(source: CommandSource):
 	global slot_selected
 	if slot_selected is None:
@@ -309,15 +302,8 @@ def confirm_restore(source: CommandSource):
 		_do_restore_backup(source, slot)
 
 
+@single_op(tr('operations.restore'))
 def _do_restore_backup(source: CommandSource, slot: int):
-	global restoring_backup_lock, creating_backup_lock
-	if creating_backup_lock.locked():
-		print_message(source, tr('do_restore.backing_up'), tell=False)
-		return
-	acquired = restoring_backup_lock.acquire(blocking=False)
-	if not acquired:
-		print_message(source, tr('do_restore.restoring'), tell=False)
-		return
 	try:
 		print_message(source, tr('do_restore.countdown.intro'), tell=False)
 		slot_info = get_slot_info(slot)
@@ -358,29 +344,27 @@ def _do_restore_backup(source: CommandSource, slot: int):
 		server_inst.logger.exception('Fail to restore backup to slot {}, triggered by {}'.format(slot, source))
 	else:
 		source.get_server().dispatch_event(RESTORE_DONE_EVENT, (source, slot, slot_info))  # async dispatch
-	finally:
-		restoring_backup_lock.release()
 
 
-def trigger_abort(source):
+def trigger_abort(source: CommandSource):
 	global abort_restore, slot_selected
 	abort_restore = True
 	slot_selected = None
 	print_message(source, tr('trigger_abort.abort'), tell=False)
 
 
-@new_thread('QBM')
+@new_thread('QBM - list')
 def list_backup(source: CommandSource, size_display: bool = None):
 	if size_display is None:
 		size_display = config.size_display
 
-	def get_dir_size(dir):
+	def get_dir_size(dir_: str):
 		size = 0
-		for root, dirs, files in os.walk(dir):
+		for root, dirs, files in os.walk(dir_):
 			size += sum([os.path.getsize(os.path.join(root, name)) for name in files])
 		return size
 
-	def format_dir_size(size):
+	def format_dir_size(size: int):
 		if size < 2 ** 30:
 			return f'{round(size / 2 ** 20, 2)} MB'
 		else:
@@ -414,7 +398,7 @@ def list_backup(source: CommandSource, size_display: bool = None):
 		print_message(source, tr('list_backup.total_space', format_dir_size(backup_size)), prefix='')
 
 
-@new_thread('QBM')
+@new_thread('QBM - help')
 def print_help_message(source: CommandSource):
 	if source.is_player:
 		source.reply('')
@@ -508,12 +492,10 @@ def register_event_listeners(server: PluginServerInterface):
 
 
 def on_load(server: PluginServerInterface, old):
-	global creating_backup_lock, restoring_backup_lock, HelpMessage, server_inst
+	global operation_lock, HelpMessage, server_inst
 	server_inst = server
-	if hasattr(old, 'creating_backup_lock') and type(old.creating_backup_lock) == type(creating_backup_lock):
-		creating_backup_lock = old.creating_backup_lock
-	if hasattr(old, 'restoring_backup_lock') and type(old.restoring_backup_lock) == type(restoring_backup_lock):
-		restoring_backup_lock = old.restoring_backup_lock
+	if hasattr(old, 'operation_lock') and type(old.operation_lock) == type(operation_lock):
+		operation_lock = old.operation_lock
 
 	meta = server.get_self_metadata()
 	HelpMessage = tr('help_message', Prefix, meta.name, meta.version)
