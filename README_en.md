@@ -7,7 +7,7 @@ A plugin for multi slot back up / restore your world
 
 The `master` branch is the Chinese version and the `english` branch is the English version
 
-Needs `v1.0.0`+ [MCDReforged](https://github.com/Fallen-Breath/MCDReforged)
+Needs `v2.0.1`+ [MCDReforged](https://github.com/Fallen-Breath/MCDReforged)
 
 ![snapshot](https://raw.githubusercontent.com/TISUnion/QuickBackupM/master/snapshot_en.png)
 
@@ -103,11 +103,23 @@ Default: `true`
 
 If turn off auto save when making backup or not
 
-### IgnoreSessionLock
+### ignored_files
 
-Default: `true`
+If ignore file `session.lock` during backup, which can 
 
-If ignore file `session.lock` during backup, which can solve the back up failure problem caused by `session.lock` being occupied by the server
+Default:
+
+```
+"ignored_files": [
+    "session.lock"
+]
+```
+
+A list of file names to be ignored during backup. It contains `session.lock` by default to solve the back up failure problem caused by `session.lock` being occupied by the server
+
+If the name string starts with `*`, then it will ignore files with name ending with specific string, e.g. `*.test` makes all files ends with `.test` be ignored, like `a.test`
+
+If the name string ends with `*`, then it will ignore files with name starting with specific string, e.g. `temp*`  makes all files starts with `temp` be ignored, like `tempfile`
 
 ### backup_path
 
@@ -163,6 +175,6 @@ Default:
 }
 ```
 
-A dict for minimum permission level requirement. For the meaning of these value check [this](https://github.com/Fallen-Breath/MCDReforged/blob/master/doc/readme.md#权限)
+A dict for minimum permission level requirement. For the meaning of these value check [this](https://mcdreforged.readthedocs.io/en/latest/permission.html)
 
 Set everything to `0` so everyone can use every command

@@ -7,7 +7,7 @@
 
 `master` 分支为中文版，`english` 分支为英文版
 
-需要 `v1.0.0` 以上的 [MCDReforged](https://github.com/Fallen-Breath/MCDReforged)
+需要 `v2.0.1` 以上的 [MCDReforged](https://github.com/Fallen-Breath/MCDReforged)
 
 ![snapshot](https://raw.githubusercontent.com/TISUnion/QuickBackupM/master/snapshot.png)
 
@@ -103,11 +103,21 @@ mcd_root/
 
 是否在备份时临时关闭自动保存
 
-### ignore_session_lock
+### ignored_files
 
-默认值: `true`
+默认值:
 
-是否在备份时忽略文件 `session.lock`。这可以解决 `session.lock` 被服务端占用导致备份失败的问题
+```
+"ignored_files": [
+    "session.lock"
+]
+```
+
+在备份时忽略的文件名列表，默认仅包含 `session.lock` 以解决 `session.lock` 被服务端占用导致备份失败的问题
+
+若文件名字符串以 `*` 开头，则将忽略以指定字符串结尾的文件，如 `*.test` 表示忽略所有以 `.test` 结尾的文件，如 `a.test`
+
+若文件名字符串以 `*` 结尾，则将忽略以指定字符串开头的文件，如 `temp*` 表示忽略所有以 `temp` 开头的文件，如 `tempfile`
 
 ### backup_path
 
@@ -164,6 +174,6 @@ mcd_root/
 }
 ```
 
-一个字典，代表使用不同类型指令需要权限等级。数值含义见[此处](https://github.com/Fallen-Breath/MCDReforged/blob/master/doc/readme_cn.md#权限)
+一个字典，代表使用不同类型指令需要权限等级。数值含义见[此处](https://mcdreforged.readthedocs.io/zh_CN/latest/permission.html)
 
 把所有数值设置成 `0` 以让所有人均可操作

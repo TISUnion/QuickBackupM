@@ -1,3 +1,5 @@
 .idea/
-release/
-utils/
+/release/
+/utils/
+/venv/
+*.mcdr
