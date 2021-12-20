@@ -119,6 +119,21 @@ mcd_root/
 
 若文件名字符串以 `*` 结尾，则将忽略以指定字符串开头的文件，如 `temp*` 表示忽略所有以 `temp` 开头的文件，如 `tempfile`
 
+### saved_world_keywords
+
+默认值:
+
+```
+"saved_world_keywords": [
+    "Saved the game",
+    "Saved the world"
+]
+```
+
+用于识别服务端已保存完毕存档的关键词
+
+如果服务器的输出与任何一个关键词相符，则认为存档已保存完毕，随后插件将开始复制存档文件
+
 ### backup_path
 
 默认值: `./qb_multi`

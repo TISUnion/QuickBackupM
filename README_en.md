@@ -121,6 +121,21 @@ If the name string starts with `*`, then it will ignore files with name ending w
 
 If the name string ends with `*`, then it will ignore files with name starting with specific string, e.g. `temp*`  makes all files starts with `temp` be ignored, like `tempfile`
 
+### saved_world_keywords
+
+Default:
+
+```
+"saved_world_keywords": [
+    "Saved the game",
+    "Saved the world"
+]
+```
+
+Keywords for the plugin to consider if the server has saved the world
+
+It is considered that the world has been saved if any keyword string equals to the server output, then the plugin will start copying the world files
+
 ### backup_path
 
 Default: `./qb_multi`

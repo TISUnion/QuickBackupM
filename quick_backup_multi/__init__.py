@@ -425,9 +425,9 @@ def print_help_message(source: CommandSource):
 		)
 
 
-def on_info(server, info: Info):
+def on_info(server: PluginServerInterface, info: Info):
 	if not info.is_user:
-		if info.content == 'Saved the game' or info.content == 'Saved the world':
+		if info.content in config.saved_world_keywords:
 			global game_saved
 			game_saved = True
 
