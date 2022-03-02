@@ -45,6 +45,17 @@ def copy_worlds(src: str, dst: str):
 	for world in config.world_names:
 		src_path = os.path.join(src, world)
 		dst_path = os.path.join(dst, world)
+
+		while os.path.islink(src_path):
+			server_inst.logger.info('copying {} -> {} (symbolic link)'.format(src_path, dst_path))
+			dst_dir = os.path.dirname(dst_path)
+			if not os.path.isdir(dst_dir):
+				os.makedirs(dst_dir)
+			link_path = os.readlink(src_path)
+			os.symlink(link_path, dst_path)
+			src_path = link_path if os.path.isabs(link_path) else os.path.normpath(os.path.join(os.path.dirname(src_path), link_path))
+			dst_path = os.path.join(dst, os.path.relpath(src_path, src))
+
 		server_inst.logger.info('copying {} -> {}'.format(src_path, dst_path))
 		if os.path.isdir(src_path):
 			shutil.copytree(src_path, dst_path, ignore=lambda path, files: set(filter(config.is_file_ignored, files)))
@@ -60,6 +71,12 @@ def copy_worlds(src: str, dst: str):
 def remove_worlds(folder: str):
 	for world in config.world_names:
 		target_path = os.path.join(folder, world)
+
+		while os.path.islink(target_path):
+			link_path = os.readlink(target_path)
+			os.unlink(target_path)
+			target_path = link_path if os.path.isabs(link_path) else os.path.normpath(os.path.join(os.path.dirname(target_path), link_path))
+
 		if os.path.isdir(target_path):
 			shutil.rmtree(target_path)
 		elif os.path.isfile(target_path):
