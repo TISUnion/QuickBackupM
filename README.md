@@ -15,19 +15,19 @@
 ```
 mcd_root/
     server.py
-    
+
     server/
         world/
-        
+
     qb_multi/
         slot1/
             info.json
             world/
-            
+
         slot2/
             ...
         ...
-        
+
         overwrite/
             info.txt
             world/
@@ -85,7 +85,7 @@ mcd_root/
 
 该列表的长度也决定了槽位的数量
 
-在默认值中，一共有 5 个槽位，其中前三个槽位未设置保护时间，第四个槽位会被保护三个小时（3 * 60 * 60 秒），第五个槽位会被保护三天 
+在默认值中，一共有 5 个槽位，其中前三个槽位未设置保护时间，第四个槽位会被保护三个小时（3 * 60 * 60 秒），第五个槽位会被保护三天
 
 请保证保护时间是随着槽位序号单调不下降的，也就是第 n 给个槽位的保护时间不能大于第 n + 1 个槽位的保护时间，否则可能有未定义的行为
 
@@ -172,6 +172,27 @@ mcd_root/
     "world_the_end"
 ]
 ```
+
+如果指定的世界名指向了一个符号链接文件, 则该链接文件指向的最终世界文件夹，以及中途所有解引用出的符号链接文件都会被备份:
+
+```sh
+mcd_root/
+    server.py
+
+    server/
+        world -> target_world # world 是一个当前指向 target_world 文件夹的符号链接
+        target_world/
+        other_world/
+
+    qb_multi/
+        slot1/
+            info.json
+            world -> target_world  # 符号链接复制到了备份槽中
+            target_world/ # 符号链接当前指向的世界一起复制到了备份槽中
+        ...
+```
+
+如果后续符号链接更改了指向的世界的话，执行`!!qb back`会将符号链接恢复至备份槽内保存的世界。
 
 ### minimum_permission_level
 
