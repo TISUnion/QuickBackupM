@@ -193,7 +193,7 @@ mcd_root/
         ...
 ```
 
-This also implies that if the symlink has changed its target world, doing `!!qb back` will revert the symlink back to the world in the slot.
+Doing `!!qb back` will restore the world folder in the slot, and revert the symlink back to the world in the slot. This implies that if the symlink has changed its target world, it will be restored to the world when making backup
 
 ### minimum_permission_level
 
