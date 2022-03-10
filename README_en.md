@@ -174,7 +174,7 @@ A list of world folder that you want to backup. For vanilla there should be only
 ]
 ```
 
-If the world name specified points to a symlink file, all dereferenced symbolic links and the final real world will be backed up:
+If the world name specified points to a symlink file, all dereferenced symbolic links and the final actual world folder will be backed up:
 
 ```sh
 mcd_root/
@@ -193,7 +193,7 @@ mcd_root/
         ...
 ```
 
-Doing `!!qb back` will restore the world folder in the slot, and revert the symlink back to the world in the slot. This implies that if the symlink has changed its target world, it will be restored to the world when making backup
+Doing `!!qb back` will restore everything from world name symlink to the final actual world folder in the slot to the server's corresponding place. This implies that if the symlink has changed its target world, the server will be restored to the world when making backup, and the world before restoring will not be overwritten
 
 ### minimum_permission_level
 
