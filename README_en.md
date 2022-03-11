@@ -15,19 +15,19 @@ The backup worlds will be store in folder qb_multi like below:
 ```
 mcd_root/
     server.py
-    
+
     server/
         world/
-        
+
     qb_multi/
         slot1/
             info.json
             world/
-            
+
         slot2/
             ...
         ...
-        
+
         overwrite/
             info.txt
             world/
@@ -105,7 +105,7 @@ If turn off auto save when making backup or not
 
 ### ignored_files
 
-If ignore file `session.lock` during backup, which can 
+If ignore file `session.lock` during backup, which can
 
 Default:
 
@@ -173,6 +173,27 @@ A list of world folder that you want to backup. For vanilla there should be only
     "world_the_end"
 ]
 ```
+
+If the world name specified points to a symlink file, all dereferenced symbolic links and the final actual world folder will be backed up:
+
+```sh
+mcd_root/
+    server.py
+
+    server/
+        world -> target_world # world is a symlink currently pointing to target_world
+        target_world/
+        other_world/
+
+    qb_multi/
+        slot1/
+            info.json
+            world -> target_world  # Symlink copied to backup slot
+            target_world/ # The current linked world is copied along with symlink
+        ...
+```
+
+Doing `!!qb back` will restore everything from world name symlink to the final actual world folder in the slot to the server's corresponding place. This implies that if the symlink has changed its target world, the server will be restored to the world when making backup, and the world before restoring will not be overwritten
 
 ### minimum_permission_level
 
