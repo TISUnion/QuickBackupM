@@ -35,3 +35,9 @@ jobs:
       with:
         name: QuickBackupM distribution for ${{ github.sha }}
         path: package/
+
+    - name: Publish distribution to release
+      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+      uses: softprops/action-gh-release@v1
+      with:
+        files: package/*.mcdr
