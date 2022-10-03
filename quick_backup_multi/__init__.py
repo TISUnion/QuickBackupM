@@ -163,14 +163,16 @@ def single_op(name: RTextBase):
 	def wrapper(func: Callable):
 		@functools.wraps(func)
 		def wrap(source: CommandSource, *args, **kwargs):
+			global operation_name
 			acq = operation_lock.acquire(blocking=False)
 			if acq:
+				operation_name = name
 				try:
 					func(source, *args, **kwargs)
 				finally:
 					operation_lock.release()
 			else:
-				print_message(source, tr('lock.warning', name))
+				print_message(source, tr('lock.warning', operation_name))
 		return wrap
 	return wrapper
 
