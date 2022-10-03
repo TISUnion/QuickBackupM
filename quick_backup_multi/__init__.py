@@ -216,9 +216,9 @@ def rename_backup(source: CommandSource, slot: int, comment: str):
 		slot_info['comment'] = comment
 		write_slot_info(get_slot_path(slot), slot_info)
 	except Exception as e:
-		print_message(source, tr('delete_backup.fail', slot, e), tell=False)
+		print_message(source, tr('rename_backup.fail', slot, e), tell=False)
 	else:
-		print_message(source, tr('delete_backup.success', slot), tell=False)
+		print_message(source, tr('rename_backup.success', slot), tell=False)
 
 
 def clean_up_slot_1():

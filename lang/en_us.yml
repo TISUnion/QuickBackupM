@@ -33,8 +33,12 @@ quick_backup_multi:
     share: §9Sharing§r
 
   delete_backup:
-    success: §aSlot §6{0}§r delete success§r
-    fail: "§4Slot §6{0}§r delete fail, error code {1}§r"
+    success: Slot §6{0}§r delete §asuccess§r
+    fail: "Slot §6{0}§r delete §4failed§r, error code {1}"
+
+  rename_backup:
+    success: Slot §6{0}§r rename §asuccess§r
+    fail: "Slot §6{0}§r rename §4failed§r, error code {1}"
 
   create_backup:
     start: §aBacking up§r, please wait

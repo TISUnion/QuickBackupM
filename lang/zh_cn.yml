@@ -33,8 +33,12 @@ quick_backup_multi:
     share: §9分享§r
 
   delete_backup:
-    success: §a删除槽位§6{0}§r完成§r
-    fail: "§4删除槽位§6{0}§r失败§r，错误代码: {1}"
+    success: 删除槽位§6{0}§r§a完成§r
+    fail: "删除槽位§6{0}§r§4失败§r，错误代码: {1}"
+
+  rename_backup:
+    success: 重命名槽位§6{0}§r§a完成§r
+    fail: "重命名槽位§6{0}§r§4失败§r，错误代码: {1}"
 
   create_backup:
     start: §a备份§r中...请稍等
