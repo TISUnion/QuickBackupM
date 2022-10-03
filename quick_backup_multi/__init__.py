@@ -424,7 +424,7 @@ def share_backup(source: CommandSource, slot: int):
 			os.system('ssh root@{} "rm {}/*" > nul'.format(config.share_address, share_path))
 		for world in config.world_names:
 			os.system('scp -r {} root@{}:{} > nul'.format(
-				os.path.join(get_slot_folder(slot), world),
+				os.path.join(get_slot_path(slot), world),
 				config.share_address,
 				os.path.join(share_path, dir_name)
 			))
