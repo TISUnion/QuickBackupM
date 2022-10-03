@@ -195,7 +195,6 @@ def clean_up_slot_1():
 	"""
 	slots = []
 	empty_slot_idx = None
-	target_slot_idx = None
 	max_available_idx = None
 	for i in range(get_slot_count()):
 		slot_idx = i + 1
@@ -220,12 +219,17 @@ def clean_up_slot_1():
 		target_slot_idx = max_available_idx
 
 	if target_slot_idx is not None:
+		slot_info = get_slot_info(target_slot_idx)
+
 		folder = get_slot_folder(target_slot_idx)
 		if os.path.isdir(folder):
 			shutil.rmtree(folder)
 		for i in reversed(range(1, target_slot_idx)):  # n-1, n-2, ..., 1
 			os.rename(get_slot_folder(i), get_slot_folder(i + 1))
 		os.mkdir(get_slot_folder(1))
+
+		server_inst.logger.info('Slot {} ({}) is deleted to provide spaces for the incoming backup'.format(target_slot_idx, format_slot_info(info_dict=slot_info)))
+
 		return True
 	else:
 		return False
