@@ -5,8 +5,9 @@ quick_backup_multi:
     §d[Format]§r
     §7{0}§r Display help message
     §7{0} make §e[<comment>]§r Make a §abackup§r to slot §61§r. §e<comment>§r is an optional comment message
-    §7{0} back §6[<slot>]§r §cRestore§r the world to slot §6<slot>§r
-    §7{0} del §6[<slot>]§r §cDelete§r the world in slot §6<slot>§r
+    §7{0} back §6[<slot>]§r §cRestore§r the world to slot §6<slot>§r. Default: slot §61§r
+    §7{0} del §6<slot>§r §cDelete§r the world in slot §6<slot>§r
+    §7{0} rename §6<slot>§r §e<comment>§r §bModify§r the comment of slot §6<slot>§r, aka rename the slot
     §7{0} confirm§r Use after execute back to confirm §crestore§r execution
     §7{0} abort§r Abort backup §crestoring§r
     §7{0} list§r Display slot information
@@ -28,6 +29,7 @@ quick_backup_multi:
     delete: §aDeleting slot§r
     create: §aBacking up§r
     restore: §cRestoring§r
+    rename: §9Renaming§r
     share: §9Sharing§r
 
   delete_backup:

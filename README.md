@@ -15,19 +15,19 @@
 ```
 mcd_root/
     server.py
-    
+
     server/
         world/
-        
+
     qb_multi/
         slot1/
             info.json
             world/
-            
+
         slot2/
             ...
         ...
-        
+
         overwrite/
             info.txt
             world/
@@ -41,7 +41,9 @@ mcd_root/
 
 `!!qb back [<slot>]` 回档为槽位 `<slot>` 的存档。
 
-`!!qb del [<slot>]` 删除槽位 `<slot>` 的存档。
+`!!qb del <slot>` 删除槽位 `<slot>` 的存档。默认为槽位 1
+
+`!!qb rename <slot> <comment>` 修改槽位 `<slot>` 的注释，即重命名这一槽位
 
 `!!qb confirm` 在执行 `back` 后使用，再次确认是否进行回档
 
@@ -85,7 +87,7 @@ mcd_root/
 
 该列表的长度也决定了槽位的数量
 
-在默认值中，一共有 5 个槽位，其中前三个槽位未设置保护时间，第四个槽位会被保护三个小时（3 * 60 * 60 秒），第五个槽位会被保护三天 
+在默认值中，一共有 5 个槽位，其中前三个槽位未设置保护时间，第四个槽位会被保护三个小时（3 * 60 * 60 秒），第五个槽位会被保护三天
 
 请保证保护时间是随着槽位序号单调不下降的，也就是第 n 给个槽位的保护时间不能大于第 n + 1 个槽位的保护时间，否则可能有未定义的行为
 
@@ -118,6 +120,21 @@ mcd_root/
 若文件名字符串以 `*` 开头，则将忽略以指定字符串结尾的文件，如 `*.test` 表示忽略所有以 `.test` 结尾的文件，如 `a.test`
 
 若文件名字符串以 `*` 结尾，则将忽略以指定字符串开头的文件，如 `temp*` 表示忽略所有以 `temp` 开头的文件，如 `tempfile`
+
+### saved_world_keywords
+
+默认值:
+
+```
+"saved_world_keywords": [
+    "Saved the game",
+    "Saved the world"
+]
+```
+
+用于识别服务端已保存完毕存档的关键词
+
+如果服务器的输出与任何一个关键词相符，则认为存档已保存完毕，随后插件将开始复制存档文件
 
 ### backup_path
 
@@ -158,6 +175,27 @@ mcd_root/
 ]
 ```
 
+如果指定的世界名指向了一个符号链接文件, 则该链接文件指向的最终实际世界文件夹，以及中途所有解引用出的符号链接文件都会被备份:
+
+```sh
+mcd_root/
+    server.py
+
+    server/
+        world -> target_world # world 是一个当前指向 target_world 文件夹的符号链接
+        target_world/
+        other_world/
+
+    qb_multi/
+        slot1/
+            info.json
+            world -> target_world  # 符号链接复制到了备份槽中
+            target_world/ # 符号链接当前指向的世界一起复制到了备份槽中
+        ...
+```
+
+执行`!!qb back`时，会从备份槽中指定世界名对应的符号链接开始，将所有符号链接以及最终实际的世界文件夹恢复至服务端的对应位置。这表示如果后续服务端的符号链接更改了指向的世界，回档时将恢复到备份时保存的世界，且不同世界的内容不会互相覆盖
+
 ### minimum_permission_level
 
 默认值:
@@ -167,6 +205,7 @@ mcd_root/
 	"make": 1,
 	"back": 2,
 	"del": 2,
+    "rename": 2,
 	"confirm": 1,
 	"abort": 1,
 	"reload": 2,

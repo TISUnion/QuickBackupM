@@ -5,8 +5,9 @@ quick_backup_multi:
     §d【格式说明】§r
     §7{0}§r 显示帮助信息
     §7{0} make §e[<cmt>]§r 创建一个储存至槽位§61§r的§a备份§r。§e<cmt>§r为可选注释
-    §7{0} back §6[<slot>]§r §c回档§r为槽位§6<slot>§r的存档
-    §7{0} del §6[<slot>]§r §c删除§r槽位§6<slot>§r的存档
+    §7{0} back §6[<slot>]§r §c回档§r为槽位§6<slot>§r的存档。默认为槽位§61§r
+    §7{0} del §6<slot>§r §c删除§r槽位§6<slot>§r的存档
+    §7{0} rename §6<slot>§r §e<cmt>§r §b修改§r槽位§6<slot>§r的注释，即重命名这一槽位
     §7{0} confirm§r 再次确认是否进行§c回档§r
     §7{0} abort§r 在任何时候键入此指令可中断§c回档§r
     §7{0} list§r 显示各槽位的存档信息
@@ -28,6 +29,7 @@ quick_backup_multi:
     delete: §a删除槽位§r
     create: §a备份§r
     restore: §c回档§r
+    rename: §9重命名§r
     share: §9分享§r
 
   delete_backup:

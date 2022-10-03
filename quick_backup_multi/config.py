@@ -13,6 +13,10 @@ class Configure(Serializable):
 	ignored_files: List[str] = [
 		'session.lock'
 	]
+	saved_world_keywords: List[str] = [
+		'Saved the game',  # 1.13+
+		'Saved the world',  # 1.12-
+	]
 	backup_path: str = './qb_multi'
 	server_path: str = './server'
 	overwrite_backup_folder: str = 'overwrite'
@@ -24,6 +28,7 @@ class Configure(Serializable):
 		'make': 1,
 		'back': 2,
 		'del': 2,
+		'rename': 2,
 		'confirm': 1,
 		'abort': 1,
 		'reload': 2,
