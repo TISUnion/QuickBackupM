@@ -41,7 +41,9 @@ mcd_root/
 
 `!!qb back [<slot>]` Restore the world to slot 1. When `<slot>` parameter is set it will restore to slot `<slot>`
 
-`!!qb del [<slot>]` Delete the world in slot `<slot>`
+`!!qb del <slot>` Delete the world in slot `<slot>`
+
+`!!qb rename <slot> <comment>` Modify the comment of slot `<slot>`, aka rename the slot
 
 `!!qb confirm` Use after execute `back` to confirm restore execution
 
@@ -204,6 +206,7 @@ Default:
 	"make": 1,
 	"back": 2,
 	"del": 2,
+    "rename": 2,
 	"confirm": 1,
 	"abort": 1,
 	"reload": 2,

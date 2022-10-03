@@ -28,6 +28,7 @@ class Configure(Serializable):
 		'make': 1,
 		'back': 2,
 		'del': 2,
+		'rename': 2,
 		'confirm': 1,
 		'abort': 1,
 		'reload': 2,

@@ -41,7 +41,9 @@ mcd_root/
 
 `!!qb back [<slot>]` 回档为槽位 `<slot>` 的存档。
 
-`!!qb del [<slot>]` 删除槽位 `<slot>` 的存档。
+`!!qb del <slot>` 删除槽位 `<slot>` 的存档。默认为槽位 1
+
+`!!qb rename <slot> <comment>` 修改槽位 `<slot>` 的注释，即重命名这一槽位
 
 `!!qb confirm` 在执行 `back` 后使用，再次确认是否进行回档
 
@@ -203,6 +205,7 @@ mcd_root/
 	"make": 1,
 	"back": 2,
 	"del": 2,
+    "rename": 2,
 	"confirm": 1,
 	"abort": 1,
 	"reload": 2,

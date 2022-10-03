@@ -5,7 +5,7 @@ import re
 import shutil
 import time
 from threading import Lock
-from typing import Optional, Any, Callable
+from typing import Optional, Any, Callable, Tuple
 
 from mcdreforged.api.all import *
 
@@ -89,8 +89,8 @@ def get_slot_count():
 	return len(config.slots)
 
 
-def get_slot_folder(slot: int):
-	return os.path.join(config.backup_path, f"slot{slot}")
+def get_slot_path(slot: int):
+	return os.path.join(config.backup_path, 'slot{}'.format(slot))
 
 
 def get_slot_info(slot: int):
@@ -100,7 +100,7 @@ def get_slot_info(slot: int):
 	:rtype: dict or None
 	"""
 	try:
-		with open(os.path.join(get_slot_folder(slot), 'info.json'), encoding='utf8') as f:
+		with open(os.path.join(get_slot_path(slot), 'info.json'), encoding='utf8') as f:
 			info = json.load(f)
 	except:
 		info = None
@@ -144,10 +144,10 @@ def touch_backup_folder():
 
 	mkdir(config.backup_path)
 	for i in range(get_slot_count()):
-		mkdir(get_slot_folder(i + 1))
+		mkdir(get_slot_path(i + 1))
 
 
-def slot_check(source: CommandSource, slot: int):
+def slot_check(source: CommandSource, slot: int) -> Optional[Tuple[int, dict]]:
 	if not 1 <= slot <= get_slot_count():
 		print_message(source, tr('unknown_slot', 1, get_slot_count()))
 		return None
@@ -157,6 +157,21 @@ def slot_check(source: CommandSource, slot: int):
 		print_message(source, tr('empty_slot', slot))
 		return None
 	return slot, slot_info
+
+
+def create_slot_info(comment: Optional[str]) -> dict:
+	slot_info = {
+		'time': format_time(),
+		'time_stamp': time.time()
+	}
+	if comment is not None:
+		slot_info['comment'] = comment
+	return slot_info
+
+
+def write_slot_info(slot_path: str, slot_info: dict):
+	with open(os.path.join(slot_path, 'info.json'), 'w', encoding='utf8') as f:
+		json.dump(slot_info, f, indent=4, ensure_ascii=False)
 
 
 def single_op(name: RTextBase):
@@ -183,7 +198,23 @@ def delete_backup(source: CommandSource, slot: int):
 	if slot_check(source, slot) is None:
 		return
 	try:
-		shutil.rmtree(get_slot_folder(slot))
+		shutil.rmtree(get_slot_path(slot))
+	except Exception as e:
+		print_message(source, tr('delete_backup.fail', slot, e), tell=False)
+	else:
+		print_message(source, tr('delete_backup.success', slot), tell=False)
+
+
+@new_thread('QBM - rename')
+@single_op(tr('operations.rename'))
+def rename_backup(source: CommandSource, slot: int, comment: str):
+	ret = slot_check(source, slot)
+	if ret is None:
+		return
+	try:
+		slot, slot_info = ret
+		slot_info['comment'] = comment
+		write_slot_info(get_slot_path(slot), slot_info)
 	except Exception as e:
 		print_message(source, tr('delete_backup.fail', slot, e), tell=False)
 	else:
@@ -223,12 +254,12 @@ def clean_up_slot_1():
 	if target_slot_idx is not None:
 		slot_info = get_slot_info(target_slot_idx)
 
-		folder = get_slot_folder(target_slot_idx)
+		folder = get_slot_path(target_slot_idx)
 		if os.path.isdir(folder):
 			shutil.rmtree(folder)
 		for i in reversed(range(1, target_slot_idx)):  # n-1, n-2, ..., 1
-			os.rename(get_slot_folder(i), get_slot_folder(i + 1))
-		os.mkdir(get_slot_folder(1))
+			os.rename(get_slot_path(i), get_slot_path(i + 1))
+		os.mkdir(get_slot_path(1))
 
 		server_inst.logger.info('Slot {} ({}) is deleted to provide spaces for the incoming backup'.format(target_slot_idx, format_slot_info(info_dict=slot_info)))
 
@@ -267,19 +298,14 @@ def _create_backup(source: CommandSource, comment: Optional[str]):
 			print_message(source, tr('create_backup.abort.no_slot'), tell=False)
 			return
 
-		slot_path = get_slot_folder(1)
+		slot_path = get_slot_path(1)
 
 		# copy worlds to backup slot
 		copy_worlds(config.server_path, slot_path)
+
 		# create info.json
-		slot_info = {
-			'time': format_time(),
-			'time_stamp': time.time()
-		}
-		if comment is not None:
-			slot_info['comment'] = comment
-		with open(os.path.join(slot_path, 'info.json'), 'w', encoding='utf8') as f:
-			json.dump(slot_info, f, indent=4, ensure_ascii=False)
+		slot_info = create_slot_info(comment)
+		write_slot_info(slot_path, slot_info)
 
 		# done
 		end_time = time.time()
@@ -356,7 +382,7 @@ def _do_restore_backup(source: CommandSource, slot: int):
 			f.write('Overwrite time: {}\n'.format(format_time()))
 			f.write('Confirmed by: {}'.format(source))
 
-		slot_folder = get_slot_folder(slot)
+		slot_folder = get_slot_path(slot)
 		server_inst.logger.info('Deleting world')
 		remove_worlds(config.server_path)
 		server_inst.logger.info('Restore backup ' + slot_folder)
@@ -399,7 +425,7 @@ def list_backup(source: CommandSource, size_display: bool = None):
 		slot_idx = i + 1
 		slot_info = format_slot_info(slot_number=slot_idx)
 		if size_display:
-			dir_size = get_dir_size(get_slot_folder(slot_idx))
+			dir_size = get_dir_size(get_slot_path(slot_idx))
 		else:
 			dir_size = 0
 		backup_size += dir_size
@@ -488,6 +514,13 @@ def register_command(server: PluginServerInterface):
 		then(
 			get_literal_node('del').
 			then(get_slot_node().runs(lambda src, ctx: delete_backup(src, ctx['slot'])))
+		).
+		then(
+			get_literal_node('rename').
+			then(
+				get_slot_node().
+				then(GreedyText('comment').runs(lambda src, ctx: rename_backup(src, ctx['slot'], ctx['comment'])))
+			)
 		).
 		then(get_literal_node('confirm').runs(confirm_restore)).
 		then(get_literal_node('abort').runs(trigger_abort)).
