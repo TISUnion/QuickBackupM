@@ -7,7 +7,7 @@ class SlotInfo(Serializable):
 	delete_protection: int = 0
 
 
-class Configure(Serializable):
+class Configuration(Serializable):
 	size_display: bool = True
 	turn_off_auto_save: bool = True
 	ignored_files: List[str] = [
@@ -55,7 +55,7 @@ class Configure(Serializable):
 
 
 if __name__ == '__main__':
-	config = Configure().get_default()
+	config = Configuration().get_default()
 	config.ignored_files = ['*.abc', 'test', 'no*']
 	assert config.is_file_ignored('.abc')
 	assert config.is_file_ignored('1.abc')

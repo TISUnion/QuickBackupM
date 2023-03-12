@@ -9,11 +9,11 @@ from typing import Optional, Any, Callable, Tuple
 
 from mcdreforged.api.all import *
 
-from quick_backup_multi.config import Configure
+from quick_backup_multi.config import Configuration
 from quick_backup_multi.constant import BACKUP_DONE_EVENT, Prefix, RESTORE_DONE_EVENT, TRIGGER_BACKUP_EVENT, \
 	CONFIG_FILE, TRIGGER_RESTORE_EVENT
 
-config: Configure
+config: Configuration
 server_inst: PluginServerInterface
 HelpMessage: RTextBase
 slot_selected = None  # type: Optional[int]
@@ -531,7 +531,7 @@ def register_command(server: PluginServerInterface):
 
 def load_config(server: ServerInterface, source: CommandSource or None = None):
 	global config
-	config = server_inst.load_config_simple(CONFIG_FILE, target_class=Configure, in_data_folder=False, source_to_reply=source)
+	config = server_inst.load_config_simple(CONFIG_FILE, target_class=Configuration, in_data_folder=False, source_to_reply=source)
 	last = 0
 	for i in range(get_slot_count()):
 		this = config.slots[i].delete_protection
