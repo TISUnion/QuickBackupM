@@ -3,7 +3,9 @@ import json
 import os
 import re
 import shutil
+import tarfile
 import time
+from enum import Enum, auto
 from threading import Lock
 from typing import Optional, Any, Callable, Tuple
 
@@ -24,6 +26,28 @@ operation_lock = Lock()
 operation_name = RText('?')
 
 
+class CopyWorldIntent(Enum):
+	backup = auto()
+	restore = auto()
+
+
+class BackupFormat(Enum):
+	plain = auto()
+	tar = auto()
+	tar_gz = auto()
+
+	@classmethod
+	def of(cls, mode: str) -> 'BackupFormat':
+		try:
+			return cls[mode]
+		except Exception:
+			return cls.plain
+
+
+def get_backup_format() -> BackupFormat:
+	return BackupFormat.of(config.backup_format)
+
+
 def tr(translation_key: str, *args) -> RTextMCDRTranslation:
 	return ServerInterface.get_instance().rtr('quick_backup_multi.{}'.format(translation_key), *args)
 
@@ -41,31 +65,71 @@ def command_run(message: Any, text: Any, command: str) -> RTextBase:
 	return fancy_text.set_hover_text(text).set_click_event(RAction.run_command, command)
 
 
-def copy_worlds(src: str, dst: str):
-	for world in config.world_names:
-		src_path = os.path.join(src, world)
-		dst_path = os.path.join(dst, world)
+def get_backup_file_name(backup_format: BackupFormat):
+	if backup_format == BackupFormat.plain:
+		raise ValueError('plain mode is not supported')
+	elif backup_format == BackupFormat.tar:
+		return 'backup.tar'
+	elif backup_format == BackupFormat.tar_gz:
+		return 'backup.tar.gz'
+	else:
+		raise ValueError('unknown backup mode {}'.format(backup_format))
 
-		while os.path.islink(src_path):
-			server_inst.logger.info('copying {} -> {} (symbolic link)'.format(src_path, dst_path))
-			dst_dir = os.path.dirname(dst_path)
-			if not os.path.isdir(dst_dir):
-				os.makedirs(dst_dir)
-			link_path = os.readlink(src_path)
-			os.symlink(link_path, dst_path)
-			src_path = link_path if os.path.isabs(link_path) else os.path.normpath(os.path.join(os.path.dirname(src_path), link_path))
-			dst_path = os.path.join(dst, os.path.relpath(src_path, src))
 
-		server_inst.logger.info('copying {} -> {}'.format(src_path, dst_path))
-		if os.path.isdir(src_path):
-			shutil.copytree(src_path, dst_path, ignore=lambda path, files: set(filter(config.is_file_ignored, files)))
-		elif os.path.isfile(src_path):
-			dst_dir = os.path.dirname(dst_path)
-			if not os.path.isdir(dst_dir):
-				os.makedirs(dst_dir)
-			shutil.copy(src_path, dst_path)
-		else:
-			server_inst.logger.warning('{} does not exist while copying ({} -> {})'.format(src_path, src_path, dst_path))
+def copy_worlds(src: str, dst: str, intent: CopyWorldIntent, *, backup_format: Optional[BackupFormat] = None):
+	if backup_format is None:
+		backup_format = get_backup_format()
+	if backup_format == BackupFormat.plain:
+		for world in config.world_names:
+			src_path = os.path.join(src, world)
+			dst_path = os.path.join(dst, world)
+
+			while os.path.islink(src_path):
+				server_inst.logger.info('copying {} -> {} (symbolic link)'.format(src_path, dst_path))
+				dst_dir = os.path.dirname(dst_path)
+				if not os.path.isdir(dst_dir):
+					os.makedirs(dst_dir)
+				link_path = os.readlink(src_path)
+				os.symlink(link_path, dst_path)
+				src_path = link_path if os.path.isabs(link_path) else os.path.normpath(os.path.join(os.path.dirname(src_path), link_path))
+				dst_path = os.path.join(dst, os.path.relpath(src_path, src))
+
+			server_inst.logger.info('copying {} -> {}'.format(src_path, dst_path))
+			if os.path.isdir(src_path):
+				shutil.copytree(src_path, dst_path, ignore=lambda path, files: set(filter(config.is_file_ignored, files)))
+			elif os.path.isfile(src_path):
+				dst_dir = os.path.dirname(dst_path)
+				if not os.path.isdir(dst_dir):
+					os.makedirs(dst_dir)
+				shutil.copy(src_path, dst_path)
+			else:
+				server_inst.logger.warning('{} does not exist while copying ({} -> {})'.format(src_path, src_path, dst_path))
+	elif backup_format == BackupFormat.tar or backup_format == BackupFormat.tar_gz:
+		if intent == CopyWorldIntent.restore:
+			tar_path = os.path.join(src, get_backup_file_name(backup_format))
+			server_inst.logger.info('extracting {} -> {}'.format(tar_path, dst))
+			with tarfile.open(tar_path, 'r:*') as backup_file:
+				backup_file.extractall(path=dst)
+		else:  # backup
+			if backup_format == BackupFormat.tar_gz:
+				tar_mode = 'w:gz'
+			else:
+				tar_mode = 'w'
+			if not os.path.isdir(dst):
+				os.makedirs(dst)
+			tar_path = os.path.join(dst, get_backup_file_name(backup_format))
+			with tarfile.open(tar_path, tar_mode) as backup_file:
+				for world in config.world_names:
+					src_path = os.path.join(src, world)
+					server_inst.logger.info('storing {} -> {}'.format(src_path, tar_path))
+					if os.path.exists(src_path):
+						def tar_filter(info: tarfile.TarInfo) -> Optional[tarfile.TarInfo]:
+							if config.is_file_ignored(info.name):
+								return None
+							return info
+						backup_file.add(src_path, arcname=world, filter=tar_filter)
+					else:
+						server_inst.logger.warning('{} does not exist while storing'.format(src_path))
 
 
 def remove_worlds(folder: str):
@@ -122,11 +186,9 @@ def format_protection_time(time_length: float) -> RTextBase:
 		return tr('day', round(time_length / 60 / 60 / 24, 2))
 
 
-def format_slot_info(info_dict: Optional[dict] = None, slot_number: Optional[int] = None) -> Optional[RTextBase]:
+def format_slot_info(info_dict: Optional[dict] = None) -> Optional[RTextBase]:
 	if isinstance(info_dict, dict):
 		info = info_dict
-	elif slot_number is not None:
-		info = get_slot_info(slot_number)
 	else:
 		return None
 
@@ -162,7 +224,8 @@ def slot_check(source: CommandSource, slot: int) -> Optional[Tuple[int, dict]]:
 def create_slot_info(comment: Optional[str]) -> dict:
 	slot_info = {
 		'time': format_time(),
-		'time_stamp': time.time()
+		'time_stamp': time.time(),
+		'backup_format': get_backup_format().name,
 	}
 	if comment is not None:
 		slot_info['comment'] = comment
@@ -301,7 +364,7 @@ def _create_backup(source: CommandSource, comment: Optional[str]):
 		slot_path = get_slot_path(1)
 
 		# copy worlds to backup slot
-		copy_worlds(config.server_path, slot_path)
+		copy_worlds(config.server_path, slot_path, CopyWorldIntent.backup)
 
 		# create info.json
 		slot_info = create_slot_info(comment)
@@ -377,7 +440,7 @@ def _do_restore_backup(source: CommandSource, slot: int):
 		overwrite_backup_path = os.path.join(config.backup_path, config.overwrite_backup_folder)
 		if os.path.exists(overwrite_backup_path):
 			shutil.rmtree(overwrite_backup_path)
-		copy_worlds(config.server_path, overwrite_backup_path)
+		copy_worlds(config.server_path, overwrite_backup_path, CopyWorldIntent.backup)
 		with open(os.path.join(overwrite_backup_path, 'info.txt'), 'w') as f:
 			f.write('Overwrite time: {}\n'.format(format_time()))
 			f.write('Confirmed by: {}'.format(source))
@@ -385,8 +448,9 @@ def _do_restore_backup(source: CommandSource, slot: int):
 		slot_folder = get_slot_path(slot)
 		server_inst.logger.info('Deleting world')
 		remove_worlds(config.server_path)
-		server_inst.logger.info('Restore backup ' + slot_folder)
-		copy_worlds(slot_folder, config.server_path)
+		backup_format = BackupFormat.of(slot_info.get('backup_format'))
+		server_inst.logger.info('Restore backup {} (mode={})'.format(slot_folder, backup_format.name))
+		copy_worlds(slot_folder, config.server_path, CopyWorldIntent.restore, backup_format=backup_format)
 
 		source.get_server().start()
 	except:
@@ -423,7 +487,8 @@ def list_backup(source: CommandSource, size_display: bool = None):
 	backup_size = 0
 	for i in range(get_slot_count()):
 		slot_idx = i + 1
-		slot_info = format_slot_info(slot_number=slot_idx)
+		slot_info = get_slot_info(slot_idx)
+		formatted_slot_info = format_slot_info(slot_info)
 		if size_display:
 			dir_size = get_dir_size(get_slot_path(slot_idx))
 		else:
@@ -434,14 +499,14 @@ def list_backup(source: CommandSource, size_display: bool = None):
 			RText(tr('list_backup.slot.header', slot_idx)).h(tr('list_backup.slot.protection', format_protection_time(config.slots[slot_idx - 1].delete_protection))),
 			' '
 		)
-		if slot_info is not None:
+		if formatted_slot_info is not None:
 			text += RTextList(
 				RText('[▷] ', color=RColor.green).h(tr('list_backup.slot.restore', slot_idx)).c(RAction.run_command, f'{Prefix} back {slot_idx}'),
 				RText('[×] ', color=RColor.red).h(tr('list_backup.slot.delete', slot_idx)).c(RAction.suggest_command, f'{Prefix} del {slot_idx}')
 			)
 			if size_display:
-				text += '§2{}§r '.format(format_dir_size(dir_size))
-		text += slot_info
+				text += RText(format_dir_size(dir_size) + ' ', RColor.dark_green).h(BackupFormat.of(slot_info.get('backup_format')).name)
+		text += formatted_slot_info
 		print_message(source, text, prefix='')
 	if size_display:
 		print_message(source, tr('list_backup.total_space', format_dir_size(backup_size)), prefix='')

@@ -197,6 +197,23 @@ mcd_root/
 
 Doing `!!qb back` will restore everything from world name symlink to the final actual world folder in the slot to the server's corresponding place. This implies that if the symlink has changed its target world, the server will be restored to the world when making backup, and the world before restoring will not be overwritten
 
+### backup_format
+
+The format of the stored backup
+
+| Value    | Explanation                                                                                                                                                              |
+|----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `plain`  | Store the backup directly via file / directory copy. The default value, the only supported format in QBM < v1.8                                                          |
+| `tar`    | Pack the files into `backup.tar` in tar format. Recommend value. It can significantly reduce the file amount. Although you cannot access files inside the backup easily  |
+| `tar_gz` | Compress the files into `backup.tar.gz` in tar.gz format. The backup size will be smaller, but the time cost in backup / restore will increase quite a lot               |
+
+槽位的备份模式会储存在槽位的 `info.json` 中，并在回档时读取。若其值不存在，则使用默认值 `plain`，对应着旧版 QBM 的表现
+
+The backup format of the slot will be stored inside the `info.json` of the slot, and will be read when restoring, so you can have different backup formats in your slots.
+If the backup format value doesn't exist, QBM will assume that it's a backup created from old QBM, and use the default `plain` format
+
+If the `backup_format` value is invalid in the config file, the default value `plain` will be used
+
 ### minimum_permission_level
 
 Default:

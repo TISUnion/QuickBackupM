@@ -23,6 +23,7 @@ class Configuration(Serializable):
 	world_names: List[str] = [
 		'world'
 	]
+	backup_format: str = 'plain'  # "plain", "tar", "tar_gz"
 	# 0:guest 1:user 2:helper 3:admin 4:owner
 	minimum_permission_level: Dict[str, int] = {
 		'make': 1,
