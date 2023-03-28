@@ -75,6 +75,42 @@ def get_backup_file_name(backup_format: BackupFormat):
 	else:
 		raise ValueError('unknown backup mode {}'.format(backup_format))
 
+try:
+    os.copy_file_range
+except:
+    copy_file_range_supported=False
+else:
+    copy_file_range_supported=True
+#copy using "Copy On Write"
+def _cpcow(src_path, dst_path):
+	if os.path.isdir(dst_path):
+		dst_path = os.path.join(dst_path, os.path.basename(src_path))
+	
+	if copy_file_range_supported:
+		# f1 = open(src_path,'r').fileno() #It doesn't work,Why?
+		f11 = open(src_path,'rb')
+		f1 = f11.fileno()
+		f21 = open(dst_path,'wb+')
+		f2 = f21.fileno()
+		size = os.path.getsize(src_path)
+		if not os.stat(src_path).st_nlink:
+			if size > 2**31 - 4096:
+				for i in range(0, size, 2**31 - 4096):
+					os.copy_file_range(f1, f2, 2**31 - 4096, i) # need int, may overflow, so cannot copy files larger than 2GB in a single pass
+			else:
+				os.copy_file_range(f1, f2, size)
+		else:
+			shutil.copy(src_path, dst_path)
+
+		f11.close()
+		f21.close()
+	else:
+		shutil.copy(src_path, dst_path)
+	
+	shutil.copystat(src_path, dst_path) # copy2 
+
+	return dst_path
+		
 
 def copy_worlds(src: str, dst: str, intent: CopyWorldIntent, *, backup_format: Optional[BackupFormat] = None):
 	if backup_format is None:
@@ -96,12 +132,12 @@ def copy_worlds(src: str, dst: str, intent: CopyWorldIntent, *, backup_format: O
 
 			server_inst.logger.info('copying {} -> {}'.format(src_path, dst_path))
 			if os.path.isdir(src_path):
-				shutil.copytree(src_path, dst_path, ignore=lambda path, files: set(filter(config.is_file_ignored, files)))
+				shutil.copytree(src_path, dst_path, ignore=lambda path, files: set(filter(config.is_file_ignored, files)), copy_function=_cpcow)
 			elif os.path.isfile(src_path):
 				dst_dir = os.path.dirname(dst_path)
 				if not os.path.isdir(dst_dir):
 					os.makedirs(dst_dir)
-				shutil.copy(src_path, dst_path)
+				_cpcow(src_path, dst_path)
 			else:
 				server_inst.logger.warning('{} does not exist while copying ({} -> {})'.format(src_path, src_path, dst_path))
 	elif backup_format == BackupFormat.tar or backup_format == BackupFormat.tar_gz:
