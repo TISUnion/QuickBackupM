@@ -81,6 +81,7 @@ except:
     copy_file_range_supported=False
 else:
     copy_file_range_supported=True
+
 #copy using "Copy On Write"
 def _cpcow(src_path, dst_path):
 	if os.path.isdir(dst_path):
@@ -93,13 +94,14 @@ def _cpcow(src_path, dst_path):
 		f21 = open(dst_path,'wb+')
 		f2 = f21.fileno()
 		size = os.path.getsize(src_path)
-		if not os.stat(src_path).st_nlink:
+		try:
 			if size > 2**31 - 4096:
 				for i in range(0, size, 2**31 - 4096):
 					os.copy_file_range(f1, f2, 2**31 - 4096, i) # need int, may overflow, so cannot copy files larger than 2GB in a single pass
 			else:
 				os.copy_file_range(f1, f2, size)
-		else:
+		except Exception as e:
+			server_inst.logger.warning(str(e) + '({} -> {})'.format(src_path, src_path, dst_path))
 			shutil.copy(src_path, dst_path)
 
 		f11.close()
