@@ -83,7 +83,7 @@ else:
     copy_file_range_supported=True
 
 #copy using "Copy On Write"
-def _cpcow(src_path, dst_path):
+def _cpcow(src_path: str, dst_path: str):
 	if os.path.isdir(dst_path):
 		dst_path = os.path.join(dst_path, os.path.basename(src_path))
 	
