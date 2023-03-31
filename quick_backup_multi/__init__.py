@@ -82,32 +82,34 @@ except:
 else:
     copy_file_range_supported=True
 
+COW_COPY_LIMIT = 2**31 - 4096
 #copy using "Copy On Write"
 def _cpcow(src_path: str, dst_path: str):
+	if not copy_file_range_supported:
+		return shutil.copy2(src_path, dst_path)
+	
 	if os.path.isdir(dst_path):
 		dst_path = os.path.join(dst_path, os.path.basename(src_path))
 	
-	if copy_file_range_supported:
-		# f1 = open(src_path,'r').fileno() #It doesn't work,Why?
+	try:
 		f11 = open(src_path,'rb')
 		f1 = f11.fileno()
 		f21 = open(dst_path,'wb+')
 		f2 = f21.fileno()
 		size = os.path.getsize(src_path)
-		try:
-			if size > 2**31 - 4096:
-				for i in range(0, size, 2**31 - 4096):
-					os.copy_file_range(f1, f2, 2**31 - 4096, i) # need int, may overflow, so cannot copy files larger than 2GB in a single pass
-			else:
-				os.copy_file_range(f1, f2, size)
-		except Exception as e:
-			server_inst.logger.warning(str(e) + '({} -> {})'.format(src_path, src_path, dst_path))
-			shutil.copy(src_path, dst_path)
 
-		f11.close()
-		f21.close()
-	else:
+		if size > COW_COPY_LIMIT:
+			for i in range(0, size, COW_COPY_LIMIT):
+				os.copy_file_range(f1, f2, COW_COPY_LIMIT, i) # need int, may overflow, so cannot copy files larger than 2GB in a single pass
+		else:
+			os.copy_file_range(f1, f2, size)
+	except Exception as e:
+		server_inst.logger.warning(str(e) + '({} -> {})'.format(src_path, src_path, dst_path) + ",Retry with other functions")
 		shutil.copy(src_path, dst_path)
+	
+	f11.close()
+	f21.close()
+
 	
 	shutil.copystat(src_path, dst_path) # copy2 
 
