@@ -75,12 +75,8 @@ def get_backup_file_name(backup_format: BackupFormat):
 	else:
 		raise ValueError('unknown backup mode {}'.format(backup_format))
 
-try:
-    os.copy_file_range
-except:
-    copy_file_range_supported=False
-else:
-    copy_file_range_supported=True
+
+copy_file_range_supported=hasattr(os, "copy_file_range")
 
 COW_COPY_LIMIT = 2**31 - 4096
 #copy using "Copy On Write"
