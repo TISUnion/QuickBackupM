@@ -107,8 +107,6 @@ If turn off auto save when making backup or not
 
 ### ignored_files
 
-If ignore file `session.lock` during backup, which can
-
 Default:
 
 ```
@@ -117,7 +115,7 @@ Default:
 ]
 ```
 
-A list of file names to be ignored during backup. It contains `session.lock` by default to solve the back up failure problem caused by `session.lock` being occupied by the server
+A list of file names to be ignored during backup. It contains `session.lock` by default to solve the backup failure problem caused by `session.lock` being occupied by the server
 
 If the name string starts with `*`, then it will ignore files with name ending with specific string, e.g. `*.test` makes all files ends with `.test` be ignored, like `a.test`
 
@@ -166,7 +164,9 @@ Default:
 ]
 ```
 
-A list of world folder that you want to backup. For vanilla there should be only 1 folder. For not vanilla server like bukkit or paper, there are 3 folders. You can write like:
+A list of world folder that you want to back up. For vanilla there should be only 1 folder. 
+
+For not vanilla server like bukkit or paper, there are 3 folders. You can write like:
 
 ```
 "world_names": [
@@ -201,18 +201,24 @@ Doing `!!qb back` will restore everything from world name symlink to the final a
 
 The format of the stored backup
 
-| Value    | Explanation                                                                                                                                                              |
-|----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `plain`  | Store the backup directly via file / directory copy. The default value, the only supported format in QBM < v1.8                                                          |
-| `tar`    | Pack the files into `backup.tar` in tar format. Recommend value. It can significantly reduce the file amount. Although you cannot access files inside the backup easily  |
-| `tar_gz` | Compress the files into `backup.tar.gz` in tar.gz format. The backup size will be smaller, but the time cost in backup / restore will increase quite a lot               |
-
-槽位的备份模式会储存在槽位的 `info.json` 中，并在回档时读取。若其值不存在，则使用默认值 `plain`，对应着旧版 QBM 的表现
+| Value    | Explanation                                                                                                                                                             |
+|----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `plain`  | Store the backup directly via file / directory copy. The default value, the only supported format in QBM < v1.8                                                         |
+| `tar`    | Pack the files into `backup.tar` in tar format. Recommend value. It can significantly reduce the file amount. Although you cannot access files inside the backup easily |
+| `tar_gz` | Compress the files into `backup.tar.gz` in tar.gz format. The backup size will be smaller, but the time cost in backup / restore will increase                          |
+| `tar_xz` | Compress the files into `backup.tar.xz` in tar.xz format. The backup size will be much smaller, but the time cost in backup / restore will greatly increase             |
 
 The backup format of the slot will be stored inside the `info.json` of the slot, and will be read when restoring, so you can have different backup formats in your slots.
 If the backup format value doesn't exist, QBM will assume that it's a backup created from old QBM, and use the default `plain` format
 
 If the `backup_format` value is invalid in the config file, the default value `plain` will be used
+
+### compress_level
+
+An integer in range 1 ~ 9, representing the compress level when config `backup_format` is set to `tar_gz`.
+The higher the level is, the higher the compression rate will be, and the longer the time it will take.
+
+Default: 1
 
 ### minimum_permission_level
 

@@ -1,4 +1,4 @@
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 from mcdreforged.api.utils.serializer import Serializable
 
@@ -23,7 +23,8 @@ class Configuration(Serializable):
 	world_names: List[str] = [
 		'world'
 	]
-	backup_format: str = 'plain'  # "plain", "tar", "tar_gz"
+	backup_format: str = 'plain'  # "plain", "tar", "tar_gz", "tar_xz"
+	compress_level: int = 1  # in range [1, 9]
 	# 0:guest 1:user 2:helper 3:admin 4:owner
 	minimum_permission_level: Dict[str, int] = {
 		'make': 1,

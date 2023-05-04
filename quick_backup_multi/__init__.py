@@ -7,7 +7,7 @@ import tarfile
 import time
 from enum import Enum, auto
 from threading import Lock
-from typing import Optional, Any, Callable, Tuple
+from typing import Optional, Any, Callable, Tuple, NamedTuple
 
 from mcdreforged.api.all import *
 
@@ -32,16 +32,27 @@ class CopyWorldIntent(Enum):
 
 
 class BackupFormat(Enum):
-	plain = auto()
-	tar = auto()
-	tar_gz = auto()
+	class Item(NamedTuple):
+		suffix: str
+		supports_compress_level: bool
+
+	plain = Item('', False)
+	tar = Item('.tar', False)
+	tar_gz = Item('.tar.gz', True)
+	tar_xz = Item('.tar.xz', False)
 
 	@classmethod
 	def of(cls, mode: str) -> 'BackupFormat':
 		try:
 			return cls[mode]
-		except Exception:
+		except KeyError:
 			return cls.plain
+
+	def get_file_name(self, base_name: str) -> str:
+		return base_name + self.value.suffix
+
+	def supports_compress_level(self) -> bool:
+		return self.value.supports_compress_level
 
 
 def get_backup_format() -> BackupFormat:
@@ -68,12 +79,7 @@ def command_run(message: Any, text: Any, command: str) -> RTextBase:
 def get_backup_file_name(backup_format: BackupFormat):
 	if backup_format == BackupFormat.plain:
 		raise ValueError('plain mode is not supported')
-	elif backup_format == BackupFormat.tar:
-		return 'backup.tar'
-	elif backup_format == BackupFormat.tar_gz:
-		return 'backup.tar.gz'
-	else:
-		raise ValueError('unknown backup mode {}'.format(backup_format))
+	return backup_format.get_file_name('backup')
 
 
 def copy_worlds(src: str, dst: str, intent: CopyWorldIntent, *, backup_format: Optional[BackupFormat] = None):
@@ -104,7 +110,7 @@ def copy_worlds(src: str, dst: str, intent: CopyWorldIntent, *, backup_format: O
 				shutil.copy(src_path, dst_path)
 			else:
 				server_inst.logger.warning('{} does not exist while copying ({} -> {})'.format(src_path, src_path, dst_path))
-	elif backup_format == BackupFormat.tar or backup_format == BackupFormat.tar_gz:
+	elif backup_format in [BackupFormat.tar, BackupFormat.tar_gz, BackupFormat.tar_xz]:
 		if intent == CopyWorldIntent.restore:
 			tar_path = os.path.join(src, get_backup_file_name(backup_format))
 			server_inst.logger.info('extracting {} -> {}'.format(tar_path, dst))
@@ -113,12 +119,17 @@ def copy_worlds(src: str, dst: str, intent: CopyWorldIntent, *, backup_format: O
 		else:  # backup
 			if backup_format == BackupFormat.tar_gz:
 				tar_mode = 'w:gz'
+			elif backup_format == BackupFormat.tar_xz:
+				tar_mode = 'w:xz'
 			else:
 				tar_mode = 'w'
 			if not os.path.isdir(dst):
 				os.makedirs(dst)
 			tar_path = os.path.join(dst, get_backup_file_name(backup_format))
-			with tarfile.open(tar_path, tar_mode) as backup_file:
+			kwargs = {}
+			if backup_format.supports_compress_level() and 1 <= config.compress_level <= 9:
+				kwargs['compresslevel'] = config.compress_level
+			with tarfile.open(tar_path, tar_mode, **kwargs) as backup_file:
 				for world in config.world_names:
 					src_path = os.path.join(src, world)
 					server_inst.logger.info('storing {} -> {}'.format(src_path, tar_path))
@@ -130,6 +141,8 @@ def copy_worlds(src: str, dst: str, intent: CopyWorldIntent, *, backup_format: O
 						backup_file.add(src_path, arcname=world, filter=tar_filter)
 					else:
 						server_inst.logger.warning('{} does not exist while storing'.format(src_path))
+	else:
+		server_inst.logger.error('Unknown backup format {}'.format(backup_format.name))
 
 
 def remove_worlds(folder: str):
