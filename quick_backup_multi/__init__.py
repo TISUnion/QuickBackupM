@@ -80,19 +80,18 @@ copy_file_range_supported=hasattr(os, "copy_file_range")
 COW_COPY_LIMIT = 2**30 # 1GB / need int, may overflow, so cannot copy files larger than 2GB in a single pass
 #copy using "Copy On Write"
 def _cpcow(src_path: str, dst_path: str):
-	if not copy_file_range_supported:
+	if not copy_file_range_supported or not config.copy_on_write:
 		return shutil.copy2(src_path, dst_path)
 	
 	if os.path.isdir(dst_path):
 		dst_path = os.path.join(dst_path, os.path.basename(src_path))
-
+	
 	try:
-		with open(src_path,'rb') as f11, open(dst_path,'wb+') as f21:
-			f1 = f11.fileno()
-			f2 = f21.fileno()
-			size = os.path.getsize(src_path)
-			for i in range(0, size, COW_COPY_LIMIT):
-				os.copy_file_range(f1, f2, COW_COPY_LIMIT, i) 		
+		with open(src_path,'rb') as fsrc, open(dst_path,'wb+') as fdst:
+			while os.copy_file_range(fsrc.fileno(), fdst.fileno(), COW_COPY_LIMIT):
+				pass
+
+	
 	except Exception as e:
 		server_inst.logger.warning(str(e) + '({} -> {})'.format(src_path, src_path, dst_path) + ",Retry with other functions")
 		shutil.copy(src_path, dst_path)
