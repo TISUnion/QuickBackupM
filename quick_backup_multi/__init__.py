@@ -77,7 +77,8 @@ def get_backup_file_name(backup_format: BackupFormat):
 
 
 copy_file_range_supported=hasattr(os, "copy_file_range")
-COW_COPY_LIMIT = 2**30 # 1GB / need int, may overflow, so cannot copy files larger than 2GB in a single pass
+COW_COPY_BUFFER_SIZE = 2**30  # 1GB / need int, may overflow, so cannot copy files larger than 2GB in a single pass
+
 #copy using "Copy On Write"
 def _cpcow(src_path: str, dst_path: str):
 	if not copy_file_range_supported or not config.copy_on_write:
@@ -88,15 +89,14 @@ def _cpcow(src_path: str, dst_path: str):
 	
 	try:
 		with open(src_path,'rb') as fsrc, open(dst_path,'wb+') as fdst:
-			while os.copy_file_range(fsrc.fileno(), fdst.fileno(), COW_COPY_LIMIT):
+			while os.copy_file_range(fsrc.fileno(), fdst.fileno(), COW_COPY_BUFFER_SIZE):
 				pass
 
-	
 	except Exception as e:
-		server_inst.logger.warning(str(e) + '({} -> {})'.format(src_path, src_path, dst_path) + ",Retry with other functions")
+		server_inst.logger.warning(str(e) + str(src_path) + "->" + str(dst_path) + ",Retry with other functions")
 		shutil.copy(src_path, dst_path)
 	
-	shutil.copystat(src_path, dst_path) # copy2 
+	shutil.copystat(src_path, dst_path)  # copy2 
 	return dst_path
 		
 
