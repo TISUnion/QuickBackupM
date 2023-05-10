@@ -10,6 +10,7 @@ class SlotInfo(Serializable):
 class Configuration(Serializable):
 	size_display: bool = True
 	turn_off_auto_save: bool = True
+	copy_on_write: bool = False
 	ignored_files: List[str] = [
 		'session.lock'
 	]

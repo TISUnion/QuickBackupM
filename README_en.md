@@ -105,6 +105,12 @@ Default: `true`
 
 If turn off auto save when making backup or not
 
+### copy_on_write
+
+Default: `false`
+
+Useing copy_on_write in some File system(incremental backup)
+
 ### ignored_files
 
 Default:

@@ -105,6 +105,12 @@ mcd_root/
 
 是否在备份时临时关闭自动保存
 
+### copy_on_write
+
+默认值: `false`
+
+使用某些文件系统的写时拷贝(一种增量备份)
+
 ### ignored_files
 
 默认值:
