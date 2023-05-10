@@ -38,11 +38,11 @@ class Configuration(Serializable):
 		'list': 0,
 	}
 	slots: List[SlotInfo] = [
-		SlotInfo(delete_protection=0),  # 无保护
-		SlotInfo(delete_protection=0),  # 无保护
-		SlotInfo(delete_protection=0),  # 无保护
-		SlotInfo(delete_protection=3 * 60 * 60),  # 三小时
-		SlotInfo(delete_protection=3 * 24 * 60 * 60),  # 三天
+		SlotInfo(delete_protection=0),  # no protection
+		SlotInfo(delete_protection=0),  # no protection
+		SlotInfo(delete_protection=0),  # no protection
+		SlotInfo(delete_protection=3 * 60 * 60),  # 3 hours
+		SlotInfo(delete_protection=3 * 24 * 60 * 60),  # 3 days
 	]
 
 	def is_file_ignored(self, file_name: str) -> bool:
