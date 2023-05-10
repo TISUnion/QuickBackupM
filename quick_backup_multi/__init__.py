@@ -520,12 +520,12 @@ def list_backup(source: CommandSource, size_display: bool = None):
 
 	def format_dir_size(size: int):
 		if size < 2 ** 30:
-			return f'{round(size / 2 ** 20, 2)} MB'
+			return '{} MiB'.format(round(size / 2 ** 20, 2))
 		else:
-			return f'{round(size / 2 ** 30, 2)} GB'
+			return '{} GiB'.format(round(size / 2 ** 30, 2))
 
 	print_message(source, tr('list_backup.title'), prefix='')
-	backup_size = 0
+	total_backup_size = 0
 	for i in range(get_slot_count()):
 		slot_idx = i + 1
 		slot_info = get_slot_info(slot_idx)
@@ -534,7 +534,7 @@ def list_backup(source: CommandSource, size_display: bool = None):
 			dir_size = get_dir_size(get_slot_path(slot_idx))
 		else:
 			dir_size = 0
-		backup_size += dir_size
+		total_backup_size += dir_size
 		# noinspection PyTypeChecker
 		text = RTextList(
 			RText(tr('list_backup.slot.header', slot_idx)).h(tr('list_backup.slot.protection', format_protection_time(config.slots[slot_idx - 1].delete_protection))),
@@ -550,7 +550,7 @@ def list_backup(source: CommandSource, size_display: bool = None):
 		text += formatted_slot_info
 		print_message(source, text, prefix='')
 	if size_display:
-		print_message(source, tr('list_backup.total_space', format_dir_size(backup_size)), prefix='')
+		print_message(source, tr('list_backup.total_space', format_dir_size(total_backup_size)), prefix='')
 
 
 @new_thread('QBM - help')
