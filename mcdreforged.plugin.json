@@ -1,6 +1,6 @@
 {
 	"id": "quick_backup_multi",
-	"version": "1.8.0",
+	"version": "1.9.0",
 	"name": "Quick Backup Multi",
 	"description": {
 		"en_us": "A backup / restore plugin, with multiple backup slot",
