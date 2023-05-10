@@ -105,11 +105,19 @@ Default: `true`
 
 If turn off auto save when making backup or not
 
-### copy_on_write
+### enable_copy_file_range
 
 Default: `false`
 
-Useing copy_on_write in some File system(incremental backup)
+Use `os.copy_file_range` for file copying
+
+In some file system, it will use the copy-on-write based reflink technique to greatly accelerate the copy speed
+
+Requirements:
+
+- Linux
+- Python >= 3.8
+- Option `backup_format` set to `plain`
 
 ### ignored_files
 

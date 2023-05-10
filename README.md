@@ -105,11 +105,19 @@ mcd_root/
 
 是否在备份时临时关闭自动保存
 
-### copy_on_write
+### enable_copy_file_range
 
 默认值: `false`
 
-使用某些文件系统的写时拷贝(一种增量备份)
+使用 `os.copy_file_range` 进行文件的复制
+
+在某些文件系统中，它会使用基于写时复制（copy-on-write）的 reflink 技术，从而极大地提升复制速度
+
+需求：
+
+- Linux 平台
+- Python >= 3.8
+- 选项 `backup_format` 为 `plain`
 
 ### ignored_files
 

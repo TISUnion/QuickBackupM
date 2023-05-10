@@ -1,4 +1,4 @@
-from typing import List, Dict, Optional
+from typing import List, Dict
 
 from mcdreforged.api.utils.serializer import Serializable
 
@@ -10,7 +10,7 @@ class SlotInfo(Serializable):
 class Configuration(Serializable):
 	size_display: bool = True
 	turn_off_auto_save: bool = True
-	copy_on_write: bool = False
+	enable_copy_file_range: bool = False
 	ignored_files: List[str] = [
 		'session.lock'
 	]
