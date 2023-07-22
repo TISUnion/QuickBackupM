@@ -30,6 +30,44 @@ class CopyWorldIntent(Enum):
 	backup = auto()
 	restore = auto()
 
+# 多线程复制文件
+class MultithreadedCopy:
+
+    def __init__(self, src, dst, thread_counts=4) -> None:
+        self.files_from = []
+        self.files_to = []
+        self.copy(src, dst, thread_counts)
+    
+    def copy(self, src, dst, thread_counts):
+        shutil.copytree(src, dst, copy_function=self._copytree_copy_function)
+        files_from, files_to = self.files_from, self.files_to
+        threads = []
+        step = int(len(files_from)//thread_counts)
+        f = lambda _list: [_list[i:i+step] for i in range(0,len(_list),step)] # 切分文件为thread_count份
+        files_from,files_to = f(files_from),f(files_to)
+        for thread in range(thread_counts): # 多线程复制
+            t = Thread(target=self._copy_thread, args=(files_from[thread], files_to[thread], thread))
+            threads.append(t)
+            t.start()
+        s_time = time.time()
+        for i in threads:
+            i.join()
+        server_inst.logger.info(time.time()-s_time)
+    
+    def _copytree_copy_function(self, src, dst):
+        self.files_from.append(src)
+        self.files_to.append(dst)
+    
+    def _copy_thread(self, files_from, files_to, id=None):
+    	# 拷贝文件
+        s_time = time.time()
+        for file_from, file_to in zip(files_from,files_to):
+            try:
+                shutil.copy2(file_from,file_to)
+            except PermissionError:
+                pass
+        if id != None:
+            server_inst.logger.info(f"[Thread {id}] {round(time.time()-s_time,2)}s")
 
 class BackupFormat(Enum):
 	class Item(NamedTuple):
@@ -130,7 +168,16 @@ def copy_worlds(src: str, dst: str, intent: CopyWorldIntent, *, backup_format: O
 
 			server_inst.logger.info('copying {} -> {}'.format(src_path, dst_path))
 			if os.path.isdir(src_path):
-				shutil.copytree(src_path, dst_path, ignore=lambda path, files: set(filter(config.is_file_ignored, files)), copy_function=copy_file_fast)
+				if config.copy_thread_active >= 1:
+					try:
+						MultithreadedCopy(src_path, dst_path, config.copy_thread_active)
+					except Exception as e:
+						server_inst.logger.warn(f"多线程复制出错，使用常规复制 {e}")
+						server_inst.say("[QBM] 多线程复制出错，使用常规复制")
+						shutil.copytree(src_path, dst_path, ignore=lambda path, files: set(filter(config.is_file_ignored, files)), copy_function=copy_file_fast)
+				else:
+					shutil.copytree(src_path, dst_path, ignore=lambda path, files: set(filter(config.is_file_ignored, files)), copy_function=copy_file_fast)
+				
 			elif os.path.isfile(src_path):
 				dst_dir = os.path.dirname(dst_path)
 				if not os.path.isdir(dst_dir):
