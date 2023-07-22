@@ -1,15 +1,16 @@
 {
 	"id": "quick_backup_multi",
-	"version": "1.9.0",
+	"version": "1.10.0-beta",
 	"name": "Quick Backup Multi",
 	"description": {
 		"en_us": "A backup / restore plugin, with multiple backup slot",
 		"zh_cn": "多槽位备份/回档插件"
 	},
 	"author": [
-		"Fallen_Breath"
+		"Fallen_Breath",
+		"tanh_Heng"
 	],
-	"link": "https://github.com/TISUnion/QuickBackupM",
+	"link": "https://github.com/tanhHeng/QuickBackupM",
 	"dependencies": {
 		"mcdreforged": ">=2.1.2"
 	},
