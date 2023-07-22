@@ -10,7 +10,7 @@
 		"Fallen_Breath",
 		"tanh_Heng"
 	],
-	"link": "https://github.com/tanhHeng/QuickBackupM",
+	"link": "https://github.com/TISUnion/QuickBackupM",
 	"dependencies": {
 		"mcdreforged": ">=2.1.2"
 	},
