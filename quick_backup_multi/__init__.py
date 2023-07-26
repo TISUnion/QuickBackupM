@@ -36,10 +36,10 @@ class BackupFormat(Enum):
 		suffix: str
 		supports_compress_level: bool
 
-	plain = Item('', False)
-	tar = Item('.tar', False)
-	tar_gz = Item('.tar.gz', True)
-	tar_xz = Item('.tar.xz', False)
+	plain = Item(''， False)
+	tar = Item('.tar'， False)
+	tar_gz = Item('.tar.gz'， True)
+	tar_xz = Item('.tar.xz'， False)
 
 	@classmethod
 	def of(cls, mode: str) -> 'BackupFormat':
@@ -49,10 +49,10 @@ class BackupFormat(Enum):
 			return cls.plain
 
 	def get_file_name(self, base_name: str) -> str:
-		return base_name + self.value.suffix
+		return base_name + self.value。suffix
 
 	def supports_compress_level(self) -> bool:
-		return self.value.supports_compress_level
+		return self.value。supports_compress_level
 
 
 def get_backup_format() -> BackupFormat:
@@ -164,14 +164,14 @@ def copy_worlds(src: str, dst: str, intent: CopyWorldIntent, *, backup_format: O
 					server_inst.logger.info('storing {} -> {}'.format(src_path, tar_path))
 					if os.path.exists(src_path):
 						def tar_filter(info: tarfile.TarInfo) -> Optional[tarfile.TarInfo]:
-							if config.is_file_ignored(info.name) or info.name in config.keeped_files: # Add the check for keeped_files here
+							if config.is_file_ignored(info.name) or info.name in config.kept_files: # Add the check for kept_files here
 								return None
 							return info
 						backup_file.add(src_path, arcname=world, filter=tar_filter)
 					else:
 						server_inst.logger.warning('{} does not exist while storing'.format(src_path))
 	else:
-		server_inst.logger.error('Unknown backup format {}'.format(backup_format.name))
+		server_inst.logger.error('Unk现在n backup format {}'.format(backup_format.name))
 
 
 def remove_worlds(folder: str):
