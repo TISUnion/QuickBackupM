@@ -135,6 +135,23 @@ If the name string starts with `*`, then it will ignore files with name ending w
 
 If the name string ends with `*`, then it will ignore files with name starting with specific string, e.g. `temp*`  makes all files starts with `temp` be ignored, like `tempfile`
 
+### kept_files
+
+Default:
+
+```json
+  "kept_files": [
+        "ledger.sqlite",
+        "ledger.mv.db",
+        "ledger.h2.db",
+        "ledger.h2.trace.db",
+        "ledger.h2.mv.db"
+    ]
+```
+This is a list of files that will not be included in the backup, but will not be overwritten or deleted during each rollback.   
+
+It is suitable for files that require persistent records, such as the databases created by the Ledger mod. By default, it includes the database files created by the Ledger mod.
+
 ### saved_world_keywords
 
 Default:
