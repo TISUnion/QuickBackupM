@@ -130,15 +130,16 @@ def copy_worlds(src: str, dst: str, intent: CopyWorldIntent, *, backup_format: O
 
 			server_inst.logger.info('copying {} -> {}'.format(src_path, dst_path))
 			if os.path.isdir(src_path):
-				shutil.copytree(src_path, dst_path, ignore=lambda path, files: set(filter(config.is_file_ignored, files)), copy_function=copy_file_fast)
+				shutil.copytree(src_path, dst_path, ignore=lambda path, files: set(filter(lambda file: file in config.kept_files or config.is_file_ignored(file), files)), copy_function=copy_file_fast)
 			elif os.path.isfile(src_path):
-				dst_dir = os.path.dirname(dst_path)
-				if not os.path.isdir(dst_dir):
-					os.makedirs(dst_dir)
-				copy_file_fast(src_path, dst_path)
+				if src_path not in config.kept_files:  # Only copy the file if it's not in the kept_files list
+					dst_dir = os.path.dirname(dst_path)
+					if not os.path.isdir(dst_dir):
+						os.makedirs(dst_dir)
+					copy_file_fast(src_path, dst_path)
 			else:
 				server_inst.logger.warning('{} does not exist while copying ({} -> {})'.format(src_path, src_path, dst_path))
-	elif backup_format in [BackupFormat.tar, BackupFormat.tar_gz, BackupFormat.tar_xz]:
+	elif backup_format in (BackupFormat.tar, BackupFormat.tar_gz, BackupFormat.tar_xz):
 		if intent == CopyWorldIntent.restore:
 			tar_path = os.path.join(src, get_backup_file_name(backup_format))
 			server_inst.logger.info('extracting {} -> {}'.format(tar_path, dst))
@@ -163,7 +164,7 @@ def copy_worlds(src: str, dst: str, intent: CopyWorldIntent, *, backup_format: O
 					server_inst.logger.info('storing {} -> {}'.format(src_path, tar_path))
 					if os.path.exists(src_path):
 						def tar_filter(info: tarfile.TarInfo) -> Optional[tarfile.TarInfo]:
-							if config.is_file_ignored(info.name):
+							if config.is_file_ignored(info.name) or info.name in config.keeped_files: # Add the check for keeped_files here
 								return None
 							return info
 						backup_file.add(src_path, arcname=world, filter=tar_filter)
