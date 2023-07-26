@@ -36,10 +36,10 @@ class BackupFormat(Enum):
 		suffix: str
 		supports_compress_level: bool
 
-	plain = Item(''， False)
-	tar = Item('.tar'， False)
-	tar_gz = Item('.tar.gz'， True)
-	tar_xz = Item('.tar.xz'， False)
+	plain = Item('', False)
+	tar = Item('.tar', False)
+	tar_gz = Item('.tar.gz', True)
+	tar_xz = Item('.tar.xz', False)
 
 	@classmethod
 	def of(cls, mode: str) -> 'BackupFormat':
@@ -49,10 +49,10 @@ class BackupFormat(Enum):
 			return cls.plain
 
 	def get_file_name(self, base_name: str) -> str:
-		return base_name + self.value。suffix
+		return base_name + self.value.suffix
 
 	def supports_compress_level(self) -> bool:
-		return self.value。supports_compress_level
+		return self.value.supports_compress_level
 
 
 def get_backup_format() -> BackupFormat:
