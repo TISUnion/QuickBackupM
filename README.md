@@ -135,6 +135,22 @@ mcd_root/
 
 若文件名字符串以 `*` 结尾，则将忽略以指定字符串开头的文件，如 `temp*` 表示忽略所有以 `temp` 开头的文件，如 `tempfile`
 
+### kept_files
+
+默认值:
+
+```
+  "kept_files": [
+        "ledger.sqlite",
+        "ledger.mv.db",
+        "ledger.h2.db",
+        "ledger.h2.trace.db",
+        "ledger.h2.mv.db"
+    ]
+```
+
+在备份时不会被加入备份文件的文件列表，但在每次回档时都不会被覆盖或者删除，适用于Ledger mod的数据库等需要持久性记录的文件
+默认包含Ledger mod会创建的数据库文件
 ### saved_world_keywords
 
 默认值:
