@@ -8,24 +8,54 @@ class SlotInfo(Serializable):
 
 
 class Configuration(Serializable):
-    size_display: bool = True
-    turn_off_auto_save: bool = True
-    enable_copy_file_range: bool = False
-    ignored_files: List[str] = [
-        'session.lock'
-    ]
-    kept_files: List[str] = ["ledger.sqlite","ledger.mv.db","ledger.h2.db"]  # Add kept_files for ledger database etc..
+	size_display: bool = True
+	turn_off_auto_save: bool = True
+	enable_copy_file_range: bool = False
+	ignored_files: List[str] = [
+		'session.lock'
+	]
+	kept_files: List[str] = ["ledger.sqlite","ledger.mv.db","ledger.h2.db"]  # Add kept_files for ledger database etc..
+	saved_world_keywords: List[str] = [
+		'Saved the game',  # 1.13+
+		'Saved the world',  # 1.12-
+	]
+	backup_path: str = './qb_multi'
+	server_path: str = './server'
+	overwrite_backup_folder: str = 'overwrite'
+	world_names: List[str] = [
+		'world'
+	]
+	backup_format: str = 'plain'  # "plain", "tar", "tar_gz", "tar_xz"
+	compress_level: int = 1  # in range [1, 9]
+	# 0:guest 1:user 2:helper 3:admin 4:owner
+	minimum_permission_level: Dict[str, int] = {
+		'make': 1,
+		'back': 2,
+		'del': 2,
+		'rename': 2,
+		'confirm': 1,
+		'abort': 1,
+		'reload': 2,
+		'list': 0,
+	}
+	slots: List[SlotInfo] = [
+		SlotInfo(delete_protection=0),  # no protection
+		SlotInfo(delete_protection=0),  # no protection
+		SlotInfo(delete_protection=0),  # no protection
+		SlotInfo(delete_protection=3 * 60 * 60),  # 3 hours
+		SlotInfo(delete_protection=3 * 24 * 60 * 60),  # 3 days
+	]
 
-    def is_file_ignored(self, file_name: str) -> bool:
-        for item in self.ignored_files:
-            if len(item) > 0:
-                if item[0] == '*' and file_name.endswith(item[1:]):
-                    return True
-                if item[-1] == '*' and file_name.startswith(item[:-1]):
-                    return True
-                if file_name == item:
-                    return True
-        return False
+	def is_file_ignored(self, file_name: str) -> bool:
+		for item in self.ignored_files:
+			if len(item) > 0:
+				if item[0] == '*' and file_name.endswith(item[1:]):
+					return True
+				if item[-1] == '*' and file_name.startswith(item[:-1]):
+					return True
+				if file_name == item:
+					return True
+		return False
 
 
 if __name__ == '__main__':
