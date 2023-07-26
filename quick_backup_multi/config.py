@@ -14,7 +14,7 @@ class Configuration(Serializable):
 	ignored_files: List[str] = [
 		'session.lock'
 	]
-	kept_files: List[str] = ["ledger.sqlite","ledger.mv.db","ledger.h2.db"]  # Add kept_files for ledger database etc..
+	kept_files: List[str] = ["ledger.sqlite","ledger.mv.db","ledger.h2.db","ledger.h2.mv.db","ledger.h2.trace.db"]  # Add kept_files for ledger database etc..
 	saved_world_keywords: List[str] = [
 		'Saved the game',  # 1.13+
 		'Saved the world',  # 1.12-
