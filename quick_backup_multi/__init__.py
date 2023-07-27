@@ -7,7 +7,7 @@ import tarfile
 import time
 from concurrent.futures import ThreadPoolExecutor
 from enum import Enum, auto
-from threading import Lock
+from threading import Lock, Event
 from typing import Optional, Any, Callable, Tuple, NamedTuple
 
 from mcdreforged.api.all import *
@@ -21,8 +21,8 @@ config: Configuration
 server_inst: PluginServerInterface
 HelpMessage: RTextBase
 slot_selected = None  # type: Optional[int]
-abort_restore = False
-game_saved = False
+abort_restore = Event()
+game_saved = Event()
 plugin_unloaded = False
 operation_lock = Lock()
 operation_name = RText('?')
@@ -410,18 +410,15 @@ def _create_backup(source: CommandSource, comment: Optional[str]):
 
 		# start backup, trigger the /save-all command
 		with utils.time_cost() as cost_save_wait:
-			global game_saved, plugin_unloaded
-			game_saved = False
+			game_saved.clear()
 			if config.turn_off_auto_save:
 				source.get_server().execute('save-off')
 			source.get_server().execute('save-all flush')
-			while True:
-				time.sleep(0.01)
-				if game_saved:
-					break
-				if plugin_unloaded:
-					print_message(source, tr('create_backup.abort.plugin_unload'), tell=False)
-					return
+
+			game_saved.wait()
+			if plugin_unloaded:
+				print_message(source, tr('create_backup.abort.plugin_unload'), tell=False)
+				return
 
 		# clean up slot 1 for backup
 		with utils.time_cost() as cost_cleanup:
@@ -461,9 +458,9 @@ def restore_backup(source: CommandSource, slot: int):
 		return
 	else:
 		slot, slot_info = ret
-	global slot_selected, abort_restore
+	global slot_selected
 	slot_selected = slot
-	abort_restore = False
+	abort_restore.clear()
 	print_message(source, tr('restore_backup.echo_action', slot, format_slot_info(info_dict=slot_info)), tell=False)
 	print_message(
 		source,
@@ -496,12 +493,10 @@ def _do_restore_backup(source: CommandSource, slot: int):
 				tr('do_restore.countdown.hover'),
 				'{} abort'.format(Prefix)
 			), tell=False)
-			for i in range(10):
-				time.sleep(0.1)
-				global abort_restore
-				if abort_restore:
-					print_message(source, tr('do_restore.abort'), tell=False)
-					return
+
+			if abort_restore.wait(1):
+				print_message(source, tr('do_restore.abort'), tell=False)
+				return
 
 		source.get_server().stop()
 		server_inst.logger.info('Wait for server to stop')
@@ -531,8 +526,8 @@ def _do_restore_backup(source: CommandSource, slot: int):
 
 
 def trigger_abort(source: CommandSource):
-	global abort_restore, slot_selected
-	abort_restore = True
+	global slot_selected
+	abort_restore.set()
 	slot_selected = None
 	print_message(source, tr('trigger_abort.abort'), tell=False)
 
@@ -613,8 +608,7 @@ def print_help_message(source: CommandSource):
 def on_info(server: PluginServerInterface, info: Info):
 	if not info.is_user:
 		if info.content in config.saved_world_keywords:
-			global game_saved
-			game_saved = True
+			game_saved.set()
 
 
 def print_unknown_argument_message(source: CommandSource, error: UnknownArgument):
@@ -697,7 +691,8 @@ def on_load(server: PluginServerInterface, old):
 	server.register_help_message(Prefix, command_run(tr('register.summory_help', get_slot_count()), tr('register.show_help'), Prefix))
 
 
-def on_unload(server):
-	global abort_restore, plugin_unloaded
-	abort_restore = True
+def on_unload(server: PluginServerInterface):
+	global plugin_unloaded
 	plugin_unloaded = True
+	abort_restore.set()  # plugin unload is a kind of "abort" too
+	game_saved.set()  # interrupt the potential waiting on game saved
