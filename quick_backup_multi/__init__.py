@@ -188,9 +188,10 @@ def copy_worlds(src: str, dst: str, intent: CopyWorldIntent, *, backup_format: O
 					server_inst.logger.info('storing {} -> {}'.format(src_path, tar_path))
 					if os.path.exists(src_path):
 						def tar_filter(info: tarfile.TarInfo) -> Optional[tarfile.TarInfo]:
-							if config.is_file_ignored(info.name):
-								return None
-							return info
+							ignored = config.is_file_ignored(os.path.basename(info.name))
+							server_inst.logger.debug('tar_filter ignore {}: {}'.format(info.name, ignored))
+							return None if ignored else info
+
 						backup_file.add(src_path, arcname=world, filter=tar_filter)
 					else:
 						server_inst.logger.warning('{} does not exist while storing'.format(src_path))
