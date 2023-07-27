@@ -12,6 +12,7 @@ from typing import Optional, Any, Callable, Tuple, NamedTuple
 
 from mcdreforged.api.all import *
 
+from quick_backup_multi import utils
 from quick_backup_multi.config import Configuration
 from quick_backup_multi.constant import BACKUP_DONE_EVENT, Prefix, RESTORE_DONE_EVENT, TRIGGER_BACKUP_EVENT, \
 	CONFIG_FILE, TRIGGER_RESTORE_EVENT
@@ -351,7 +352,7 @@ def rename_backup(source: CommandSource, slot: int, comment: str):
 
 def clean_up_slot_1():
 	"""
-	try to cleanup slot 1 for backup
+	try to clean up slot 1 for backup
 	:rtype: bool
 	"""
 	slots = []
@@ -381,15 +382,14 @@ def clean_up_slot_1():
 
 	if target_slot_idx is not None:
 		slot_info = get_slot_info(target_slot_idx)
-
 		folder = get_slot_path(target_slot_idx)
+		server_inst.logger.info('deleting slot {} ({}) to provide spaces for the incoming backup'.format(target_slot_idx, format_slot_info(info_dict=slot_info)))
+
 		if os.path.isdir(folder):
 			shutil.rmtree(folder)
 		for i in reversed(range(1, target_slot_idx)):  # n-1, n-2, ..., 1
 			os.rename(get_slot_path(i), get_slot_path(i + 1))
 		os.mkdir(get_slot_path(1))
-
-		server_inst.logger.info('Slot {} ({}) is deleted to provide spaces for the incoming backup'.format(target_slot_idx, format_slot_info(info_dict=slot_info)))
 
 		return True
 	else:
@@ -408,28 +408,31 @@ def _create_backup(source: CommandSource, comment: Optional[str]):
 		start_time = time.time()
 		touch_backup_folder()
 
-		# start backup
-		global game_saved, plugin_unloaded
-		game_saved = False
-		if config.turn_off_auto_save:
-			source.get_server().execute('save-off')
-		source.get_server().execute('save-all flush')
-		while True:
-			time.sleep(0.01)
-			if game_saved:
-				break
-			if plugin_unloaded:
-				print_message(source, tr('create_backup.abort.plugin_unload'), tell=False)
+		# start backup, trigger the /save-all command
+		with utils.time_cost() as cost_save_wait:
+			global game_saved, plugin_unloaded
+			game_saved = False
+			if config.turn_off_auto_save:
+				source.get_server().execute('save-off')
+			source.get_server().execute('save-all flush')
+			while True:
+				time.sleep(0.01)
+				if game_saved:
+					break
+				if plugin_unloaded:
+					print_message(source, tr('create_backup.abort.plugin_unload'), tell=False)
+					return
+
+		# clean up slot 1 for backup
+		with utils.time_cost() as cost_cleanup:
+			if not clean_up_slot_1():
+				print_message(source, tr('create_backup.abort.no_slot'), tell=False)
 				return
 
-		if not clean_up_slot_1():
-			print_message(source, tr('create_backup.abort.no_slot'), tell=False)
-			return
-
-		slot_path = get_slot_path(1)
-
-		# copy worlds to backup slot
-		copy_worlds(config.server_path, slot_path, CopyWorldIntent.backup)
+		# copy worlds to the target backup slot
+		with utils.time_cost() as cost_copy_worlds:
+			slot_path = get_slot_path(1)
+			copy_worlds(config.server_path, slot_path, CopyWorldIntent.backup)
 
 		# create info.json
 		slot_info = create_slot_info(comment)
@@ -437,6 +440,9 @@ def _create_backup(source: CommandSource, comment: Optional[str]):
 
 		# done
 		end_time = time.time()
+		server_inst.logger.info('Time costs: save wait {}s, clean up {}s, copy worlds {}s'.format(
+			round(cost_save_wait, 2), round(cost_cleanup, 2), round(cost_copy_worlds, 2)
+		))
 		print_message(source, tr('create_backup.success', round(end_time - start_time, 1)), tell=False)
 		print_message(source, format_slot_info(info_dict=slot_info), tell=False)
 	except Exception as e:
