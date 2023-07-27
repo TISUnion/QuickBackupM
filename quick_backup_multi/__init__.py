@@ -125,7 +125,7 @@ def copy_tree_fast(src_path: str, dst_path: str, ignore=None, copy_function: Cal
 		return
 
 	futures = []
-	with ThreadPoolExecutor(max_workers=config.concurrent_copy_workers, thread_name_prefix='QBMFileCopier') as pool:
+	with ThreadPoolExecutor(max_workers=config.concurrent_copy_workers, thread_name_prefix='QBM_FileCopier') as pool:
 		def concurrent_copy(src: str, dst: str):
 			futures.append(pool.submit(do_copy, src, dst))
 
@@ -321,7 +321,7 @@ def single_op(name: RTextBase):
 	return wrapper
 
 
-@new_thread('QBM - delete')
+@new_thread('QBM_Delete')
 @single_op(tr('operations.delete'))
 def delete_backup(source: CommandSource, slot: int):
 	if slot_check(source, slot) is None:
@@ -334,7 +334,7 @@ def delete_backup(source: CommandSource, slot: int):
 		print_message(source, tr('delete_backup.success', slot), tell=False)
 
 
-@new_thread('QBM - rename')
+@new_thread('QBM_Rename')
 @single_op(tr('operations.rename'))
 def rename_backup(source: CommandSource, slot: int, comment: str):
 	ret = slot_check(source, slot)
@@ -396,7 +396,7 @@ def clean_up_slot_1():
 		return False
 
 
-@new_thread('QBM - create')
+@new_thread('QBM_Create')
 def create_backup(source: CommandSource, comment: Optional[str]):
 	_create_backup(source, comment)
 
@@ -471,7 +471,7 @@ def restore_backup(source: CommandSource, slot: int):
 	)
 
 
-@new_thread('QBM - restore')
+@new_thread('QBM_Restore')
 def confirm_restore(source: CommandSource):
 	global slot_selected
 	if slot_selected is None:
@@ -532,7 +532,7 @@ def trigger_abort(source: CommandSource):
 	print_message(source, tr('trigger_abort.abort'), tell=False)
 
 
-@new_thread('QBM - list')
+@new_thread('QBM_List')
 def list_backup(source: CommandSource, size_display: bool = None):
 	if size_display is None:
 		size_display = config.size_display
@@ -578,7 +578,7 @@ def list_backup(source: CommandSource, size_display: bool = None):
 		print_message(source, tr('list_backup.total_space', format_dir_size(total_backup_size)), prefix='')
 
 
-@new_thread('QBM - help')
+@new_thread('QBM_Help')
 def print_help_message(source: CommandSource):
 	if source.is_player:
 		source.reply('')
