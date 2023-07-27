@@ -119,6 +119,22 @@ mcd_root/
 - Python >= 3.8
 - 选项 `backup_format` 为 `plain`
 
+### concurrent_copy_workers
+
+默认值：`0`
+
+参考值：`0`, `2`, `4`
+
+复制文件时的并行度，当其值为 `n` 时，QBM 将使用 `n` 线程并行复制文件
+
+当使用 SSD 或其他高 IO 性能的存储设备时，开启并行复制可以有效提升复制的速度，但 CPU、磁盘负载也会显著增加
+
+设为 `0` 以关闭并行复制
+
+需求：
+
+- 选项 `backup_format` 为 `plain`
+
 ### ignored_files
 
 默认值:

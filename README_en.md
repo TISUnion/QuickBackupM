@@ -119,6 +119,22 @@ Requirements:
 - Python >= 3.8
 - Option `backup_format` set to `plain`
 
+### concurrent_copy_workers
+
+Default: `0`
+
+Recommended values: `0`, `2`, `4`
+
+Set the concurrency level for file copying. If the value is `n`, QBM will use `n` threads to copy files concurrently 
+
+When using SSDs or other high-performance I/O devices, enabling concurrent copying can boost speed significantly, but it also increases CPU and disk load
+
+Set it to `0` to turn off concurrent copying
+
+Requirements:
+
+- Option `backup_format` set to `plain`
+
 ### ignored_files
 
 Default:

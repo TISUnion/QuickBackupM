@@ -5,6 +5,7 @@ import re
 import shutil
 import tarfile
 import time
+from concurrent.futures import ThreadPoolExecutor
 from enum import Enum, auto
 from threading import Lock
 from typing import Optional, Any, Callable, Tuple, NamedTuple
@@ -108,7 +109,30 @@ def copy_file_fast(src_path: str, dst_path: str) -> str:
 	
 	shutil.copystat(src_path, dst_path)  # ref: shutil.copy2
 	return dst_path
-		
+
+
+def copy_tree_fast(src_path: str, dst_path: str, ignore=None, copy_function: Callable[[str, str], object] = shutil.copy2):
+	def do_copy(src: str, dst: str):
+		try:
+			copy_function(src, dst)
+		except Exception as e:
+			server_inst.logger.error('Failed to copy file from {} to {}: {}'.format(src, dst, e))
+			raise
+
+	if config.concurrent_copy_workers <= 0:
+		shutil.copytree(src_path, dst_path, ignore=ignore, copy_function=do_copy)
+		return
+
+	futures = []
+	with ThreadPoolExecutor(max_workers=config.concurrent_copy_workers, thread_name_prefix='QBMFileCopier') as pool:
+		def concurrent_copy(src: str, dst: str):
+			futures.append(pool.submit(do_copy, src, dst))
+
+		shutil.copytree(src_path, dst_path, ignore=ignore, copy_function=concurrent_copy)
+
+	for future in futures:
+		future.result()
+
 
 def copy_worlds(src: str, dst: str, intent: CopyWorldIntent, *, backup_format: Optional[BackupFormat] = None):
 	if backup_format is None:
@@ -130,7 +154,7 @@ def copy_worlds(src: str, dst: str, intent: CopyWorldIntent, *, backup_format: O
 
 			server_inst.logger.info('copying {} -> {}'.format(src_path, dst_path))
 			if os.path.isdir(src_path):
-				shutil.copytree(src_path, dst_path, ignore=lambda path, files: set(filter(config.is_file_ignored, files)), copy_function=copy_file_fast)
+				copy_tree_fast(src_path, dst_path, ignore=lambda path, files: set(filter(config.is_file_ignored, files)), copy_function=copy_file_fast)
 			elif os.path.isfile(src_path):
 				dst_dir = os.path.dirname(dst_path)
 				if not os.path.isdir(dst_dir):
