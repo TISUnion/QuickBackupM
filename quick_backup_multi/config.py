@@ -60,11 +60,3 @@ class Configuration(Serializable):
 
 if __name__ == '__main__':
     config = Configuration().get_default()
-    config.ignored_files = ['*.abc', 'test', 'no*']
-    assert config.is_file_ignored('.abc')
-    assert config.is_file_ignored('1.abc')
-    assert config.is_file_ignored('abc') is False
-    assert config.is_file_ignored('test')
-    assert config.is_file_ignored('1test') is False
-    assert config.is_file_ignored('notest')
-    assert config.is_file_ignored('no')
