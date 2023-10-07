@@ -679,10 +679,11 @@ def register_event_listeners(server: PluginServerInterface):
 
 
 def on_load(server: PluginServerInterface, old):
-	global operation_lock, HelpMessage, server_inst
+	global operation_lock, operation_name, HelpMessage, server_inst
 	server_inst = server
 	if hasattr(old, 'operation_lock') and type(old.operation_lock) == type(operation_lock):
 		operation_lock = old.operation_lock
+		operation_name = getattr(old, 'operation_name', operation_name)
 
 	meta = server.get_self_metadata()
 	HelpMessage = tr('help_message', Prefix, meta.name, meta.version)
