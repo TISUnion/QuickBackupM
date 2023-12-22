@@ -1,5 +1,7 @@
 # QuickBackupM
----------
+
+> [!TIP]
+> If you need a more advanced and comprehensive backup solution, you can check out the [Prime Backup](https://github.com/TISUnion/PrimeBackup) plugin
 
 [中文](https://github.com/TISUnion/QuickBackupM/blob/master/README.md)
 

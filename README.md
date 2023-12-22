@@ -1,5 +1,7 @@
 # QuickBackupM
----------
+
+> [!TIP]
+> 如果需要更为先进完善的备份解决方案，你可以看看 [Prime Backup](https://github.com/TISUnion/PrimeBackup) 插件
 
 [English](https://github.com/TISUnion/QuickBackupM/blob/master/README_en.md)
 
