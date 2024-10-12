@@ -1,7 +1,10 @@
 # QuickBackupM
 
-> [!TIP]
-> If you need a more advanced and comprehensive backup solution, you can check out the [Prime Backup](https://github.com/TISUnion/PrimeBackup) plugin
+> [!NOTE]
+> QuickBackupM has entered maintenance mode, where only bug fixes will be provided and no new features will be added
+>
+> You may want to check out the [Prime Backup](https://github.com/TISUnion/PrimeBackup) plugin, which is the successor to QuickBackupM. 
+> It is a more advanced and comprehensive backup solution, serving as an upgrade over QuickBackupM
 
 [中文](https://github.com/TISUnion/QuickBackupM/blob/master/README.md)
 

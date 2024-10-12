@@ -1,7 +1,10 @@
 # QuickBackupM
 
-> [!TIP]
-> 如果需要更为先进完善的备份解决方案，你可以看看 [Prime Backup](https://github.com/TISUnion/PrimeBackup) 插件
+> [!NOTE]
+> QuickBackupM 已进入维护模式，只进行 bug 修复，不再增加新功能
+> 
+> 可以去看看 [Prime Backup](https://github.com/TISUnion/PrimeBackup) 插件，这是 QuickBackupM 的接替者，
+> 是一套更为先进完善的备份解决方案，也是 QuickBackupM 的上位替代
 
 [English](https://github.com/TISUnion/QuickBackupM/blob/master/README_en.md)
 
