@@ -84,38 +84,10 @@ def get_backup_file_name(backup_format: BackupFormat):
 	return backup_format.get_file_name('backup')
 
 
-COPY_FILE_RANGE_SUPPORTED = hasattr(os, 'copy_file_range')
-COPY_FILE_RANGE_BUFFER_SIZE = 2 ** 30  # 1GiB
-
-
-def copy_file_fast(src_path: str, dst_path: str) -> str:
-	"""
-	A ``shutil.copy2`` alternative that uses ``os.copy_file_range`` whenever possible
-
-	``os.copy_file_range`` may support copy-on-write, which is much faster than regular copy
-	"""
-	if not COPY_FILE_RANGE_SUPPORTED or not config.enable_copy_file_range:
-		return shutil.copy2(src_path, dst_path)
-	
-	if os.path.isdir(dst_path):  # ref: shutil.copy2
-		dst_path = os.path.join(dst_path, os.path.basename(src_path))
-	
-	try:
-		with open(src_path, 'rb') as f_src, open(dst_path, 'wb+') as f_dst:
-			while os.copy_file_range(f_src.fileno(), f_dst.fileno(), COPY_FILE_RANGE_BUFFER_SIZE):
-				pass
-	except Exception as e:
-		server_inst.logger.warning('copy_file_range {} -> {} failed ({}), retrying with shutil.copy'.format(src_path, dst_path, e))
-		shutil.copy(src_path, dst_path)
-	
-	shutil.copystat(src_path, dst_path)  # ref: shutil.copy2
-	return dst_path
-
-
-def copy_tree_fast(src_path: str, dst_path: str, ignore=None, copy_function: Callable[[str, str], object] = shutil.copy2):
+def copy_tree_fast(src_path: str, dst_path: str, ignore=None):
 	def do_copy(src: str, dst: str):
 		try:
-			copy_function(src, dst)
+			shutil.copy2(src, dst)
 		except Exception as e:
 			server_inst.logger.error('Failed to copy file from {} to {}: {}'.format(src, dst, e))
 			raise
@@ -155,12 +127,12 @@ def copy_worlds(src: str, dst: str, intent: CopyWorldIntent, *, backup_format: O
 
 			server_inst.logger.info('copying {} -> {}'.format(src_path, dst_path))
 			if os.path.isdir(src_path):
-				copy_tree_fast(src_path, dst_path, ignore=lambda path, files: set(filter(config.is_file_ignored, files)), copy_function=copy_file_fast)
+				copy_tree_fast(src_path, dst_path, ignore=lambda path, files: set(filter(config.is_file_ignored, files)))
 			elif os.path.isfile(src_path):
 				dst_dir = os.path.dirname(dst_path)
 				if not os.path.isdir(dst_dir):
 					os.makedirs(dst_dir)
-				copy_file_fast(src_path, dst_path)
+				shutil.copy2(src_path, dst_path)
 			else:
 				server_inst.logger.warning('{} does not exist while copying ({} -> {})'.format(src_path, src_path, dst_path))
 	elif backup_format in [BackupFormat.tar, BackupFormat.tar_gz, BackupFormat.tar_xz]:
